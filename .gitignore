@@ -1,3 +1,11 @@
+spectroscopy/plots
+morphology/plots
+
+# For now ignore all the humonguously big notebooks
+*.ipynb
+
+## Python gitognore from github
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
