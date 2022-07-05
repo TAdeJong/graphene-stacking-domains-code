@@ -111,8 +111,3 @@ scalebar = ScaleBar(0.88e-9, "m", length_fraction=0.25,
                    )
 axs[-1].add_artist(scalebar)
 plt.savefig(os.path.join('plots', 'defocusseries_large_angle.pdf'), dpi=600)
-# -
-
-[int(i*4.5+1) for i in range(5)]
-
-

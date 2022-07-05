@@ -16,6 +16,7 @@
 # +
 import dask.array as da
 import matplotlib.pyplot as plt
+from matplotlib import patches, ticker
 import numpy as np
 import os
 from skimage.io import imread
@@ -36,6 +37,7 @@ import pyGPA.cuGPA as cuGPA
 from skimage.morphology import erosion, disk, binary_erosion
 from skimage.morphology import erosion, disk
 from registration.registration import register_stack, strided_register
+
 
 # +
 folder = '/mnt/storage-linux/2021TBGdata'
@@ -67,8 +69,6 @@ smooth2 = gauss_homogenize2(image, smooth> 0.88, sigma=50)
 plt.figure(figsize=[15,9])
 plt.imshow(smooth, vmin=0.9)
 plt.colorbar()
-
-from matplotlib import patches, ticker
 
 # +
 fig, axs = plt.subplots(ncols=2, figsize=[9,4.2],gridspec_kw=dict(width_ratios=[8,4]))
@@ -130,12 +130,3 @@ plt.tight_layout()
 for ax, l in zip(axs,'ba'):
     ax.set_title(l, fontweight='bold', loc='left')
 plt.savefig(os.path.join('plots', 'metrology.pdf'))
-# -
-
-plt.hist(smooth2.ravel(), bins=200);
-
-np.exp(0.12)
-
-np.exp(0.3)
-
-

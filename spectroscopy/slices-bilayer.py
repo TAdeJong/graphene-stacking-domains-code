@@ -16,6 +16,7 @@
 # +
 import dask.array as da
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 import numpy as np
 import os
 from skimage.io import imread
@@ -93,6 +94,7 @@ cmasks = [cull_by_mask(smask, smask) for smask in smasks]
 cmasks[3] = cmasks[2]
 
 nmperpixels = [2.23, 2.23, 3.7,3.7]
+labels = ['QFBLG', 'EMLG', '1-on-2 TBG', '1-on-1 TBG']
 
 # +
 from matplotlib_scalebar.scalebar import ScaleBar
@@ -126,9 +128,6 @@ plt.savefig(os.path.join('plots','EGYslices.pdf'))
 # -
 
 3.7/2.23, 4.45/2.73
-
-# +
-#nmperpixels = [np.array(conts[i]["NMPERPIXEL"])[0] for i in [0,1,2,2]]
 
 # +
 fig, axs = plt.subplots(2,2, figsize=[18,15])
@@ -172,9 +171,6 @@ for i in range(4):
     axs.flat[i].plot(xs,ys)
 
 lengths = np.array(lengths) #lengths is 2 times the length in pixels
-# -
-
-lengths
 
 # +
 fix, ax = plt.subplots(ncols=3, figsize=[9,4])
@@ -190,14 +186,9 @@ for i in range(3):
     ax[i].plot(xs.squeeze(), ys.squeeze(), color=f'C{i}')
 # -
 
-nmperpixels
-
 #coords = np.broadcast_arrays(Es[:,None], xs[None,:], ys[None,:])
 #Eslices = [ndi.map_coordinates(ndi.gaussian_filter(cdata[i], [0,2,2]), c) for i,c in enumerate(coords)]
 Eslices = [ndi.map_coordinates(cdata[i], c) for i,c in enumerate(coords)]
-
-from matplotlib import ticker
-labels = ['QFBLG', 'EMLG', '1-on-2 TBG', '1-on-1 TBG']
 
 # +
 fix, ax = plt.subplots(2,2, figsize=[4.1,4.5], constrained_layout=True)
@@ -389,7 +380,7 @@ cbar.update_ticks()
 for E in pltEGY:
     axs[0].axvline(E, alpha=0.5, color='black')
 
-labels = ['QFBLG', 'EMLG', '1-on-2 TBG', '1-on-1 TBG']
+#labels = ['QFBLG', 'EMLG', '1-on-2 TBG', '1-on-1 TBG']
 for ax, r, label in zip(axs[1:], nmperpixels, labels):
     ax.set_title(label)
     ax.set_ylabel(f'(nm)')
