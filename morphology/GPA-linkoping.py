@@ -14,21 +14,19 @@
 # ---
 
 # +
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 import pyGPA.geometric_phase_analysis as GPA
 from pyGPA.imagetools import gauss_homogenize2, fftplot
 import os
 from skimage.io import imread
 from moisan2011 import per
-import scipy.ndimage as ndi
 
 from skimage.filters import threshold_otsu
 from skimage.morphology import binary_erosion, disk
-from latticegen.transformations import rotate
 from pyGPA.imagetools import to_KovesiRGB, indicate_k
-import colorcet
+import colorcet  # noqa: F401
 import pyGPA.cuGPA as cuGPA
 from matplotlib_scalebar.scalebar import ScaleBar
 
@@ -45,10 +43,6 @@ NMPERPIXEL = 1.36
 #image = image / image.max()
 # -
 
-# r = 1500
-# image = image[r:-r, r:-r].astype(float)
-plt.imshow(image.T)
-
 1152816 * 16.0 * 1352, (image > 0).sum(), 1152816 * 16.0 * 0.25 * 1352/(image > 0).sum()
 
 16.0*0.25 * 8
@@ -58,37 +52,23 @@ plt.ylim(0, 3e5)
 
 f, ax = plt.subplots(ncols=2)
 ax[0].imshow((image > 0).T)
-ax[1].imshow((image > .50).T)
+ax[1].imshow(image.T)
 
+# Small image to extract pks
 crop1 = image[5700:6500, 1600:2400]
 plt.imshow(crop1.T)
 plt.colorbar()
 
+# Larger crop to perform GPA and statistics on
 crop2 = image[5120:7620, 1800:4300]
 plt.imshow(crop2.T)
-
-plt.hist(crop1.ravel(), bins=100)
 
 smooth1 = gauss_homogenize2(crop1, mask=np.ones_like(crop1), sigma=80)
 plt.imshow(smooth1 > 0.8)
 smooth1 = np.clip(smooth1, 0.8, None)  # Clip out adsorbates
 
-plt.imshow(smooth1.T)
-plt.colorbar()
-
-# +
 p, s = per(smooth1 - smooth1.mean(), inverse_dft=False)
 fftim = np.fft.fftshift(np.abs(p))
-
-f, ax = plt.subplots(figsize=[12, 8])
-im = fftplot(ndi.filters.gaussian_filter(fftim, sigma=2),
-             pcolormesh=False, ax=ax, interpolation='none')
-fftr = 0.2
-plt.xlim(-fftr, fftr)
-plt.ylim(-fftr, fftr)
-plt.colorbar(im, ax=ax)
-# -
-
 pks, _ = GPA.extract_primary_ks(smooth1 - smooth1.mean(), plot=True, sigma=2, pix_norm_range=(10, 70), DoG=False)
 pks2, _ = GPA.extract_primary_ks(smooth1 - smooth1.mean(), plot=True, sigma=2, pix_norm_range=(30, 70), DoG=False)
 
@@ -119,18 +99,12 @@ plt.savefig(os.path.join('plots', 'GPAstripe-extract.pdf'))
 
 smooth = gauss_homogenize2(crop2, mask=np.ones_like(crop2), sigma=70)
 
-X = ndi.gaussian_filter(crop2, sigma=50)
 cropped = smooth
-f, axs = plt.subplots(ncols=3, figsize=[16, 5])
-axs[0].imshow(X.T)
-axs[1].imshow(cropped.T,  vmin=0.8, vmax=1.18)
-axs[2].hist(cropped.ravel(), bins=100)
+f, axs = plt.subplots(ncols=2, figsize=[12, 5])
+axs[0].imshow(cropped.T, vmin=0.8, vmax=1.18)
+axs[1].hist(cropped.ravel(), bins=100);
 
 clipped = np.clip(cropped, 0.8, None)
-
-p, s = per(clipped - clipped.mean(), inverse_dft=False)
-
-fftim = np.fft.fftshift(np.abs(p))
 
 1/np.linalg.norm(pks, axis=1).mean(), 1/np.linalg.norm(pks2, axis=1).mean()
 
@@ -141,12 +115,14 @@ u2, gs2 = GPA.extract_displacement_field(clipped, pks2*pks2scale,
                                          return_gs=True, wfr_func=cuGPA.wfr2_grad_opt)
 
 # +
-f, axs = plt.subplots(ncols=3, nrows=2, figsize=[18, 12])
+
 
 magnitudes2 = np.stack([np.abs(g['lockin']) for g in gs2])
 angles2 = np.stack([np.angle(g['lockin']) for g in gs2])
 grads2 = np.stack([g['grad'] for g in gs2])
 gradmags2 = np.stack([np.linalg.norm(g['grad'], axis=-1) for g in gs2])
+
+f, axs = plt.subplots(ncols=3, nrows=2, figsize=[18, 12])
 for i, ax in enumerate(axs.flat[:3]):
     ax.imshow(angles2[i].T, cmap='twilight', interpolation='nearest')
     ax.imshow(clipped.T, cmap='gray', alpha=0.5, vmax=1.18)
@@ -157,9 +133,7 @@ axs[1, 1].imshow(clipped.T, cmap='gray')
 axs[1, 2].imshow(to_KovesiRGB((gradmags2 < 0.06).astype(float).T))
 # -
 
-plt.hist([mag.ravel() for mag in gradmags2[::-1]], bins=100, histtype='barstacked')
-
-plt.figure(figsize=[12, 12])
+plt.figure(figsize=[6, 6])
 plt.imshow(to_KovesiRGB((magnitudes2 == np.max(magnitudes2, axis=0, keepdims=True)).astype(float).T
                         ))
 plt.imshow(clipped.T, cmap='gray', vmax=np.quantile(clipped, 0.98), alpha=0.5)
@@ -171,22 +145,7 @@ angles = np.stack([np.angle(g['lockin']) for g in gs])
 grads = np.stack([g['grad'] for g in gs])
 gradmags = np.stack([np.linalg.norm(g['grad'], axis=-1) for g in gs])
 
-# +
-f, axs = plt.subplots(ncols=3, nrows=2, figsize=[18, 12])
-
-
-for i, ax in enumerate(axs.flat[:3]):
-    ax.imshow(angles[i].T, cmap='twilight', interpolation='nearest')
-    ax.imshow(clipped.T, cmap='gray', alpha=0.5)
-    indicate_k(pks, i, ax=ax)
-axs[1, 0].imshow(to_KovesiRGB((magnitudes/np.quantile(magnitudes, 0.99, axis=(1, 2), keepdims=True)).T))
-axs[1, 1].imshow(clipped.T)
-axs[1, 2].imshow(to_KovesiRGB((gradmags < 0.05).astype(float).T))
-# -
-
 fftr2 = 0.07
-
-NMPERPIXEL, fftr2
 
 # +
 f, axs = plt.subplots(ncols=4, nrows=2, figsize=[9, 4.5], sharex=True, sharey=True, constrained_layout=True)
@@ -302,13 +261,8 @@ plt.savefig(os.path.join('plots', 'GPAGSiCdisl.pdf'))
 
 threshes = np.array([threshold_otsu(m) for m in magnitudes])
 thresholded = (magnitudes > np.mean(threshes[:, None, None]))
-
 mask = np.any(thresholded[[0, 2]], axis=0)
 eroded_mask = binary_erosion(mask, disk(15))
-
-plt.imshow(np.where(mask, np.nan, np.argmax(magnitudes2, axis=0)).T)
-
-mask.shape
 
 (~mask).sum(), (mask).sum()
 
@@ -316,8 +270,10 @@ for i in range(3):
     print((np.where(mask, np.nan, np.argmax(magnitudes2, axis=0)) == i).sum()/(~mask).sum())
 
 plt.figure(figsize=[12, 9])
-plt.imshow(np.where(mask.T[..., None], np.nan, to_KovesiRGB((magnitudes2 == np.max(magnitudes2, axis=0, keepdims=True)).astype(float).T
-                                                            )))
+plt.imshow(np.where(mask.T[..., None],
+                    np.nan,
+                    to_KovesiRGB((magnitudes2 == np.max(magnitudes2, axis=0, keepdims=True)).astype(float).T
+                                 )))
 plt.imshow(clipped.T, cmap='gray', vmax=np.quantile(clipped, 0.98), alpha=0.5)
 plt.colorbar()
 
@@ -375,79 +331,11 @@ axs[1].scatter(*-pks.T, color='C1')
 plt.tight_layout()
 # -
 
-(magnitudes2 == np.max(magnitudes2, axis=0, keepdims=True)).shape
-
 allwavelengths = np.linalg.norm(wadvs, axis=1)
 wavelengths = np.where(magnitudes2 == np.max(magnitudes2, axis=0, keepdims=True), allwavelengths, 0.)
 wavelengths = np.nanmax(wavelengths, axis=0)
 
-f, ax = plt.subplots(ncols=2, figsize=[16, 6.5], constrained_layout=True)
-ax[0].imshow(np.where(mask, np.nan, NMPERPIXEL/oldwavelengths))
-ax[1].imshow(np.where(mask, np.nan, NMPERPIXEL/wavelengths))
-
-# +
-NMPERPIXEL = 1.36
-oldwavelengths = np.linalg.norm(wadvs[0], axis=0)
-plangles = np.arctan2(*wadvs[0][::-1])
-
-f, axs = plt.subplots(ncols=2, figsize=[16, 6.5], constrained_layout=True)
-wl_im = np.where(mask, np.nan, NMPERPIXEL/wavelengths)
-im = axs[0].imshow(wl_im.T,
-                   vmax=np.nanquantile(wl_im, 0.999),
-                   vmin=np.nanquantile(wl_im, 0.001), cmap='inferno')
-plt.colorbar(im, ax=axs[0], label='wavelength (nm)')
-extent = np.array(im.get_extent())*NMPERPIXEL/1e3
-im.set_extent(extent)
-im = axs[0].imshow(clipped.T, cmap='gray', alpha=0.5)
-im.set_extent(extent)
-
-angleplot = -np.where(mask, np.nan, np.rad2deg(plangles))
-im = axs[1].imshow(angleplot.T,
-                   vmax=np.nanquantile(angleplot, 0.99),
-                   vmin=np.nanquantile(angleplot, 0.01))
-im.set_extent(extent)
-plt.colorbar(im, ax=axs[1], label='angle (degree)')
-im = axs[1].imshow(clipped.T, cmap='gray', alpha=0.5)
-im.set_extent(extent)
-
-# +
-f, axs = plt.subplots(ncols=2, figsize=[9, 3.8], constrained_layout=True, sharey=True)
-wl_im = np.where(mask, np.nan, 0.246 / (2*NMPERPIXEL/wavelengths) * 100)
-im = axs[0].imshow(wl_im,
-                   vmax=np.nanquantile(wl_im, 0.9999),
-                   vmin=np.nanquantile(wl_im, 0.01), cmap='inferno')
-plt.colorbar(im, ax=axs[0], label='relative strain (%)', shrink=0.98, extend='min')
-extent = np.array(im.get_extent())*NMPERPIXEL/1e3
-im.set_extent(extent)
-im = axs[0].imshow(clipped, cmap='gray', alpha=0.5)
-im.set_extent(extent)
-
-#angleplot = -np.where(mask, np.nan, np.rad2deg(angles))
-im = axs[1].imshow(angleplot,
-                   vmax=np.nanquantile(angleplot, 0.99),
-                   vmin=np.nanquantile(angleplot, 0.01))
-im.set_extent(extent)
-plt.colorbar(im, ax=axs[1], label='angle (degree)', shrink=0.98, extend='both')
-im = axs[1].imshow(clipped, cmap='gray', alpha=0.5)
-im.set_extent(extent)
-axs[0].set_title('a', fontweight='bold', loc='left')
-axs[1].set_title('b', fontweight='bold', loc='left')
-for i in range(2):
-    axs[i].set_xlabel('x (μm)')
-plt.savefig(os.path.join('plots', 'Linkopingextractedvalues.pdf'), dpi=600)
-
-
-# +
 C0toC1 = LinearSegmentedColormap.from_list("C0toC1", ['C0', 'C1'])
-plt.figure(figsize=[10, 10])
-
-plt.imshow(mask, cmap=C0toC1)
-plt.imshow(clipped, cmap='gray', alpha=0.5, vmax=np.quantile(clipped, 0.999))
-# -
-
-0.246 / (2*NMPERPIXEL/wavelengths) * 100
-
-mask.sum() / np.ones_like(mask).sum()
 
 vals = [
     np.where(
@@ -459,11 +347,7 @@ vals = [
         np.nan) for i in range(3)]
 vals = [(0.246 / (2*NMPERPIXEL/val) * 100)[~np.isnan(val)] for val in vals]
 
-[v.shape for v in vals]
-
-plt.hist(vals, bins=1000, histtype='barstacked', color=list('rgb'))
-
-plt.hist(vals, bins=1000, histtype='barstacked', color=list('rgb'))
+plt.hist(vals, bins=1000, histtype='barstacked', color=list('rgb'));
 
 wadvs1 = np.stack([np.moveaxis(gs[i]['grad'], -1, 0) / 2/np.pi + pks[i, :, None, None] for i in range(3)])
 allwavelengths1 = np.linalg.norm(wadvs1, axis=1)
@@ -471,11 +355,11 @@ vals1 = [allwavelengths1[i][mask] for i in range(3)]
 vals1 = [(0.246 / (NMPERPIXEL/val) * 100) for val in vals1]
 plt.hist(vals1, bins=1000, histtype='barstacked', color=list('rgb'))
 
-np.concatenate(vals).ravel().shape
-
 plt.hist([np.concatenate(vals).ravel(), np.concatenate(vals1).ravel()], bins=1000, histtype='barstacked')
 
 weighted_vals = np.average(np.stack(vals1), weights=np.stack([m[mask] for m in magnitudes]), axis=0)
+
+wl_im = np.where(mask, np.nan, 0.246 / (2*NMPERPIXEL/wavelengths) * 100)
 
 Xim = np.full_like(mask, np.nan, dtype=float)
 Xim[mask] = weighted_vals
