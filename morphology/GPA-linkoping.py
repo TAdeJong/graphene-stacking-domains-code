@@ -8,9 +8,9 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.14.0
 #   kernelspec:
-#     display_name: Python [conda env:root] *
+#     display_name: Python [conda env:pyL5cupy]
 #     language: python
-#     name: conda-root-py
+#     name: conda-env-pyL5cupy-py
 # ---
 
 # +
@@ -71,13 +71,13 @@ plt.hist(crop1.ravel(), bins=100)
 
 smooth1 = gauss_homogenize2(crop1, mask=np.ones_like(crop1), sigma=80)
 plt.imshow(smooth1 > 0.8)
-smooth1 = np.clip(smooth1, 0.8, None)
+smooth1 = np.clip(smooth1, 0.8, None)  # Clip out adsorbates
 
 plt.imshow(smooth1.T)
 plt.colorbar()
 
+# +
 p, s = per(smooth1 - smooth1.mean(), inverse_dft=False)
-
 fftim = np.fft.fftshift(np.abs(p))
 
 f, ax = plt.subplots(figsize=[12, 8])
@@ -87,6 +87,7 @@ fftr = 0.2
 plt.xlim(-fftr, fftr)
 plt.ylim(-fftr, fftr)
 plt.colorbar(im, ax=ax)
+# -
 
 pks, _ = GPA.extract_primary_ks(smooth1 - smooth1.mean(), plot=True, sigma=2, pix_norm_range=(10, 70), DoG=False)
 pks2, _ = GPA.extract_primary_ks(smooth1 - smooth1.mean(), plot=True, sigma=2, pix_norm_range=(30, 70), DoG=False)
@@ -246,22 +247,6 @@ for i, ax in enumerate(axs.flat):
     ax.set_title('abcdefghijk'[i], fontweight='bold', loc='left')
 # plt.tight_layout()
 plt.savefig(os.path.join('plots', 'GPAphasessampleB.pdf'), dpi=600)
-# -
-
-loc = [1100, 350]
-rplot = 200
-fig, ax = plt.subplots(ncols=2, figsize=[9, 4.5])
-ax[0].imshow(angles[0, loc[0]-rplot:loc[0]+rplot, loc[1]-rplot:loc[1]+rplot],
-             cmap='twilight', interpolation='nearest')
-ax[0].imshow(clipped[loc[0]-rplot:loc[0]+rplot, loc[1]-rplot:loc[1]+rplot],
-             cmap='gray', alpha=0.7)
-loc = [1350, 1600]
-ax[1].imshow(angles2[0, loc[0]-rplot:loc[0]+rplot, loc[1]-rplot:loc[1]+rplot],
-             cmap='twilight', interpolation='nearest')
-ax[1].imshow(clipped[loc[0]-rplot:loc[0]+rplot, loc[1]-rplot:loc[1]+rplot],
-             cmap='gray', alpha=0.7)
-
-5/9
 
 # +
 loc = [1100, 350]
@@ -450,7 +435,6 @@ axs[1].set_title('b', fontweight='bold', loc='left')
 for i in range(2):
     axs[i].set_xlabel('x (μm)')
 plt.savefig(os.path.join('plots', 'Linkopingextractedvalues.pdf'), dpi=600)
-# -
 
 
 # +
@@ -586,125 +570,3 @@ cbar = plt.colorbar(ticks=[-2, -1, 0, 1, 2, 3, 4])
 cbar.ax.set_yticklabels(['ϵ < 0.3', 'ϵ < 0.37', 'ϵ > 0.37', 'ϵ > 0.45', 'ϵ < 0.37', 'ϵ < 0.45', 'ϵ > 0.45'])
 plt.tight_layout()
 plt.savefig(os.path.join('plots', 'Linkopingstrainvaluelocs6x6.pdf'), dpi=600)
-# -
-
-plt.figure(figsize=[18, 18])
-#plt.imshow(np.where(mask & (Xim < 0.3), Xim, np.nan), cmap='inferno', vmin=0.2, vmax=0.7)
-#plt.imshow(np.where(mask & (Xim < 0.37), Xim, np.nan), cmap='inferno', vmin=0.2, vmax=0.7)
-plt.imshow(np.where(~mask & (wl_im < 0.37), wl_im, np.nan), cmap='inferno', vmin=0.2, vmax=0.7)
-plt.imshow(clipped, cmap='gray', alpha=0.5, vmax=np.quantile(clipped, 0.999))
-
-plt.hist(np.concatenate(vals).ravel(), bins=1000, alpha=0.5, range=(0.1, 0.7))
-plt.hist(weighted_vals.ravel(), bins=1000, alpha=0.5, range=(0.1, 0.7))
-
-
-plt.hist(np.concatenate(vals).ravel(), bins=1000, alpha=0.5, range=(0.1, 0.7))
-plt.hist(np.concatenate(vals1).ravel(), bins=1000, alpha=0.5, range=(0.1, 0.7))
-
-fig, axs = plt.subplots(ncols=3, figsize=[26, 8], sharex=True, sharey=True)
-for i in range(3):
-    im = axs[i].imshow(np.where(mask, (0.246 / (NMPERPIXEL/allwavelengths1[i]) * 100), np.nan), vmin=0.1, vmax=0.6)
-    plt.colorbar(im, ax=axs[i])
-
-fig, axs = plt.subplots(ncols=3, figsize=[26, 8], sharex=True, sharey=True)
-for i in range(3):
-    axs[i].imshow(np.where(mask, angles[i], np.nan), cmap='twilight')
-
-threshes = np.array([threshold_otsu(m) for m in magnitudes])
-#threshes = np.array([threshold_otsu(magnitudes)]*3)
-fig, axs = plt.subplots(ncols=2, figsize=[12, 6])
-axs[0].hist([m.ravel() for m in magnitudes], bins=200, histtype='barstacked', alpha=0.7, color=rgb)
-for i, t in enumerate(threshes):
-    axs[0].axvline(t, color=rgb[i])
-axs[1].imshow(to_KovesiRGB((magnitudes > threshes[:, None, None]).astype(float).T))
-
-plt.figure(figsize=[5, 5])
-plt.imshow(to_KovesiRGB((magnitudes > 0.011).astype(float).T))
-
-angle = np.deg2rad((np.rad2deg(np.arctan2(pks[:, 1], pks[:, 0])) % 60).mean())
-
-kmean = np.linalg.norm(pks, axis=1).mean()
-
-pksnew = np.array([rotate(np.array([0, kmean]), -angle-np.pi/3*i) for i in range(3)])
-
-# +
-wadvs = []
-for i in range(3):
-    phase = np.angle(gs[i]['lockin'])
-    #gphase = np.stack(_wrapToPi(np.array(np.gradient(-unwrap_phase(phase))))/2/np.pi)
-    gphase = np.moveaxis(gs[i]['grad'], -1, 0)/2/np.pi
-    print(gphase.shape, gphase.mean(axis=(1, 2)))
-    w = gphase + pks[i, :, None, None]
-    wadvs.append(w)
-wadvs = np.stack(wadvs)
-
-wxs = np.concatenate([wadvs[:, 0], -wadvs[:, 0]])
-wys = np.concatenate([wadvs[:, 1], -wadvs[:, 1]])
-# -
-
-wadvs.mean(axis=(-1, -2))
-
-pksnew = np.nanmean(np.where(eroded_mask, wadvs, np.nan), axis=(-1, -2))
-pksnew
-
-for ks in [np.nanmean(np.where(eroded_mask, wadvs, np.nan), axis=(-1, -2))*1.1,
-           pksnew,
-           pks, pks2]:
-    plt.scatter(*np.stack([ks, -ks], axis=0).T)
-plt.gca().set_aspect('equal')
-
-u, gs = GPA.extract_displacement_field(clipped, pksnew, ksteps=3, kwscale=4, sigma=25,
-                                       return_gs=True, wfr_func=cuGPA.wfr2_grad_opt)
-
-# +
-f, axs = plt.subplots(ncols=3, nrows=2, figsize=[18, 12])
-
-magnitudes = np.stack([np.abs(g['lockin']) for g in gs])
-angles = np.stack([np.angle(g['lockin']) for g in gs])
-grads = np.stack([g['grad'] for g in gs])
-gradmags = np.stack([np.linalg.norm(g['grad'], axis=-1) for g in gs])
-for i, ax in enumerate(axs.flat[:3]):
-    ax.imshow(angles[i].T, cmap='twilight', interpolation='nearest')
-    ax.imshow(clipped.T, cmap='gray', alpha=0.5)
-    indicate_k(pks, i, ax=ax)
-axs[1, 0].imshow(to_KovesiRGB((magnitudes/np.quantile(magnitudes, 0.99, axis=(1, 2), keepdims=True)).T))
-axs[1, 1].imshow(clipped.T)
-axs[1, 2].imshow(to_KovesiRGB((gradmags < 0.05).astype(float).T))
-# -
-
-wadvs.mean(axis=(-1, -2)), pks
-
-#wxs = np.clip(wxs, -0.15,0.15)
-#wys = np.clip(wys, -0.15,0.15)
-p, _ = per(clipped-clipped.mean(), inverse_dft=False)
-fftim = np.abs(np.fft.fftshift(p))
-r = 0.04
-fig, axs = plt.subplots(ncols=3, figsize=[26, 8], sharex=True, sharey=True)
-axs[0].hist2d(wxs.ravel()[np.stack([mask]*6).ravel()],
-              wys.ravel()[np.stack([mask]*6).ravel()],
-              bins=500, cmap='cet_fire_r', vmax=2000,
-              range=[(-r, r), (-r, r)])
-axs[0].set_aspect('equal')
-#plt.title(f'sigma={sigma}, kstep={kstep}')
-pksweights = magnitudes/np.quantile(magnitudes[0], 0.99)
-axs[1].hist2d(wxs.ravel()[np.stack([eroded_mask]*6).ravel()],
-              wys.ravel()[np.stack([eroded_mask]*6).ravel()],
-              # weights=np.stack([pksweights[:,eroded_mask]]*2).ravel(),
-              bins=500, cmap='cet_fire_r', vmax=2000,
-              range=[(-r, r), (-r, r)])
-axs[1].set_aspect('equal')
-fftplot(fftim, ax=axs[2], pcolormesh=False, vmax=np.quantile(fftim, 0.9999),
-        vmin=np.quantile(fftim, 0.01), cmap='cet_fire_r',
-        interpolation='none', origin='lower')
-#plt.title(f'sigma={sigma}, kstep={kstep}')
-axs[0].set_ylim(-r, r)
-axs[0].set_xlim(-r, r)
-axs[1].scatter(*(pks2*1.2).T)
-axs[1].scatter(*-(pks2*1.2).T, color='C0')
-axs[1].scatter(*pksnew.T, color=rgb, s=100)
-axs[1].scatter(*-pksnew.T, color=rgb, s=220)
-plt.tight_layout()
-
-for ks in [np.nanmean(np.where(eroded_mask, wadvs, np.nan), axis=(-1, -2)), pks]:
-    plt.scatter(*np.stack([ks, -ks], axis=0).T)
-plt.gca().set_aspect('equal')
