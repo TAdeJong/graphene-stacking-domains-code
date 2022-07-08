@@ -13,6 +13,11 @@
 #     name: conda-env-pyL5cupy-py
 # ---
 
+# # Twisted bilayer graphene unit cell averaging
+#
+# In this notebook, we apply unit cell averaging to a spectroscopic LEEM dataset of Twisted Bilayer Graphene (TBG) with a twist angle of $\theta \approx 0.18^\circ$.
+# The extracted reflectivity data for different spots in the unit cell is compared to calculated reflectivities for different relative stackings of bilayer graphene.
+
 # +
 import dask.array as da
 import matplotlib.pyplot as plt
@@ -90,6 +95,7 @@ for X in [MULTIPLIER, data2, EGY]:
 EGY = np.concatenate(EGY)
 data2 = da.concatenate(data2, axis=0)
 MULTIPLIER = np.concatenate(MULTIPLIER)
+nmperpixel = 1.36
 # -
 
 cluster = LocalCluster(n_workers=2, threads_per_worker=8, memory_limit='28GB')
@@ -117,8 +123,7 @@ rIV = 15
 meanIV = data3[:, 800-rIV:800+rIV, 600-rIV:600+rIV].mean(axis=[1, 2]) / MULTIPLIER
 meanIV = meanIV.compute()
 meanIV = meanIV / meanIV[:20].mean()
-
-plt.semilogy(EGY, meanIV / meanIV[:20].mean())
+plt.semilogy(EGY, meanIV)
 
 start = np.array((102, 677))
 end = np.array((1200, 365))
@@ -129,12 +134,7 @@ Es = np.arange(data3.shape[0])
 plt.plot(xs, ys, '.')
 plt.show()
 
-coords = np.broadcast_arrays(Es[:, None], xs[None, :], ys[None, :])
 calcdata = data3.astype(float)  # .compute()
-[x.shape for x in coords]
-
-# +
-
 
 GPAim = np.nanmean(np.where(calcdata[210:220] == 0, np.nan, calcdata[210:220]), axis=0).compute()
 GPAcrop = trim_nans2(GPAim)
@@ -143,10 +143,9 @@ plt.imshow(GPAcrop.T)
 pks, _ = GPA.extract_primary_ks(GPAcrop, plot=True, pix_norm_range=(5, 100))
 
 # +
-
-kw = np.linalg.norm(pks, axis=1).mean()/4
+kw = np.linalg.norm(pks, axis=1).mean() / 4
 sigma = 30
-kstep = kw/4
+kstep = kw / 4
 dks = np.zeros_like(pks) + GPA.calc_diff_from_isotropic(pks)
 
 # (re-)generate mask now sigma is known
@@ -157,13 +156,15 @@ mask = binary_erosion(mask, disk(dr))
 GPAims = gauss_homogenize2(GPAim, mask, 50, nan_scale=0)
 
 GPAims = np.where(~mask, 0, GPAims - np.nanmean(GPAims))
-# -
 
-pks_iso = pks+dks
-gs = []
-for pk in pks:
-    g = GPA.wfr2_grad_opt(GPAims, sigma, pk[0]*1., pk[1]*1., kw=kw, kstep=kstep)
-    gs.append(g)
+# +
+pks_iso = pks + dks
+    
+gs = [GPA.wfr2_grad_opt(GPAims, sigma, 
+                        pk[0], pk[1], 
+                        kw=kw, kstep=kstep) 
+      for pk in pks]
+# -
 
 # regenerate smask with the right dr
 smask = generate_mask(data3, 0, r=dr)
@@ -176,6 +177,7 @@ phases = np.stack([np.angle(g['lockin']) for g in gs])
 wxs = np.array([g['w'][0] for g in gs])
 wys = np.array([g['w'][1] for g in gs])
 
+# + jupyter={"outputs_hidden": true, "source_hidden": true} tags=[]
 fig, axs = plt.subplots(ncols=3, nrows=3, figsize=[16, 12])
 for i in range(len(gs)):
     dx = pks[i][0] - gs[i]['w'][0]
@@ -195,10 +197,9 @@ for i in range(len(gs)):
     #plt.colorbar(im, ax=axs[2,i])
     axs[1, i].set_title(f"{pks[i][0]:.3f}, {pks[i][1]:.3f}")
 
-# +
+# + jupyter={"source_hidden": true, "outputs_hidden": true} tags=[]
 wadvs = []
 for i in range(3):
-    phase = np.angle(gs[i]['lockin'])
     gphase = np.moveaxis(gs[i]['grad'], -1, 0)/2/np.pi
     w = gphase + pks_iso[i, :, None, None]
     wadvs.append(w)
@@ -233,46 +234,26 @@ fftplot(fftim, ax=axs[2], pcolormesh=False, vmax=np.quantile(fftim, 0.9999),
 # +
 
 
-phases = np.stack([np.angle(g['lockin']) for g in gs])
+#phases = np.stack([np.angle(g['lockin']) for g in gs])
 maskzero = 0.000001
 weights = np.stack([np.abs(g['lockin']) for g in gs])*(mask+maskzero)
-#b = np.stack([GPA.phase_unwrap(p,w) for p,w in zip(phases,weights)])
-
-
-#uw = GPA.reconstruct_u_inv(pks, b, weights=weights)
 
 grads = np.stack([g['grad'] for g in gs])
-#grads = np.moveaxis(grads, -1, 1)
 
-#edge = 2
-
-#lxx, lyy = np.mgrid[:b.shape[1], :b.shape[2]]
 lxx, lyy = np.mgrid[:phases.shape[1], :phases.shape[2]]
 dks = GPA.calc_diff_from_isotropic(pks)
 iso_grads = np.stack([g['grad'] - 2*np.pi*np.array([dk[0], dk[1]]) for g, dk in zip(gs, dks)])
 iso_grads = wrapToPi(iso_grads)
 
-#b_iso = b + np.stack([2*np.pi*(dk[0]*lxx+dk[1]*lyy) for dk in dks])
-
-
-#uw_iso = GPA.reconstruct_u_inv(pks+dks, b_iso, weights=weights)
-
-
 iso_phases = phases + np.stack([2*np.pi*(dk[0]*lxx+dk[1]*lyy) for dk in dks])
-#unew = GPA.reconstruct_u_inv_from_phases(pks, phases, weights)
+
 unew_iso = GPA.reconstruct_u_inv_from_phases(pks+dks, iso_phases, weights)
 # -
-
-fig, ax = plt.subplots(ncols=2, figsize=[12, 6])
-ax[0].imshow(np.where(smask, unew_iso[0], np.nan).T)
-ax[1].imshow(np.where(smask, unew_iso[1], np.nan).T)
 
 u_inv = GPA.invert_u_overlap(unew_iso)
 xxh2, yyh2 = np.mgrid[:unew_iso.shape[1], :unew_iso.shape[2]]
 reconstructed = ndi.map_coordinates(np.nan_to_num(GPAim), [xxh2+u_inv[0], yyh2+u_inv[1]], cval=np.nan)
 reconstructed2 = ndi.map_coordinates(np.nan_to_num(GPAim), [xxh2+unew_iso[0], yyh2+unew_iso[1]], cval=np.nan)
-#newxs = ndi.map_coordinates(xxh2, [xs])
-nxs, nys = u_it = [ndi.map_coordinates(u, [xs, ys], mode='nearest') for u in unew_iso]
 
 # +
 smask2 = (np.where(smask, data3[70], np.nan) > 4.9e4).compute()  # Yes, this is a magic value
@@ -307,36 +288,7 @@ plt.tight_layout()
 plt.savefig(os.path.join('plots', 'unitcellaveragintop.pdf'), dpi=300)
 # -
 
-fig, ax = plt.subplots(ncols=2, figsize=[25, 18])
-ax[0].imshow(GPAim.T, vmax=np.nanquantile(reconstructed, 0.999), vmin=np.nanquantile(reconstructed, 0.001),
-             origin='lower',
-             cmap='gray')
-ax[0].set_title('original')
-center = np.array((719, 538))
-#end = np.array((1200,365))
-#angle = np.arctan2(pks[0,1], pks[0,0])
-#angle = np.arctan2(*(pks[1]+pks[2])[::-1])
-for angle in np.arctan2(*(pks+dks)[::-1].T[::-1]):
-    end = center + 600*np.array([np.cos(angle), np.sin(angle)])
-    start = center - 600*np.array([np.cos(angle), np.sin(angle)])
-    length = np.linalg.norm(start-end)*2
-    xs = np.linspace(start[0], end[0], int(length))
-    ys = np.linspace(start[1], end[1], int(length))
-    ax[1].plot(xs, ys)
-    nxs, nys = u_it = [ndi.map_coordinates(u, [xs, ys], mode='nearest') for u in unew_iso]
-    ax[0].plot(xs+nxs, ys+nys)
-ax[1].imshow(reconstructed.T,
-             vmax=np.nanquantile(reconstructed, 0.999), vmin=np.nanquantile(reconstructed, 0.001),
-             origin='lower',
-             cmap='gray')  # , interpolation='none')
-ax[1].set_title('reconstructed')
-
-coords = np.broadcast_arrays(Es[:, None], (xs+nxs)[None, :1150*2], (ys+nys)[None, :1150*2])
-#newEslice = ndi.map_coordinates(calcdata, np.broadcast_arrays(*coords))
-
 lpks = (pks+dks)[:2]
-
-np.rad2deg(np.arctan2(*(pks+dks).T[::-1]))
 
 recon = trim_nans2(np.where(reconstructed < 100, np.nan, reconstructed))
 ucellim2 = uc.unit_cell_average(recon, lpks, z=1)
@@ -349,14 +301,8 @@ ax[1].imshow(uc_averaged.T,
 indicate_k((pks+dks), 0, ax=ax[1])
 indicate_k((pks+dks), 1, ax=ax[1])
 
-recon.dtype, lpks
 
-plt.imshow(recon.T)
-plt.colorbar()
-
-list(combinations(pks+dks, 2))
-
-
+# +
 def generate_cut(lpks, z, rshift=np.array([0, 0]), direction=np.array([1, 1]), npoints=200):
     a_0 = np.linspace(0, 1, npoints)
     ucellcoords = np.stack([a_0, a_0], axis=-1) * direction
@@ -364,8 +310,6 @@ def generate_cut(lpks, z, rshift=np.array([0, 0]), direction=np.array([1, 1]), n
     scattercoords0 = z*(uc.backward_transform(ucellcoords, lpks).T)
     scattercoords = z*uc.cart_in_uc(rshift/z + rmin + scattercoords0.T, lpks, rmin=rmin).T
     return scattercoords
-
-# +
 
 
 def find_shift(ucellim, sigma=0):
@@ -383,21 +327,6 @@ def find_shift(ucellim, sigma=0):
 
 # -
 
-a_0, a_1 = np.linspace(0, 1, 200), np.linspace(0, 1, 200)
-z = 2
-fig, ax = plt.subplots(ncols=3, figsize=[18, 6])
-for i, lpks in enumerate(combinations(pks+dks, 2)):
-    lpks = np.array(lpks)
-    lpks[0] = lpks[0]*np.sign(np.dot(*lpks))*-1
-    rmin, rsize = uc.calc_ucell_parameters(lpks, z)
-    ucellim = uc.unit_cell_average(GPAim, np.array(lpks), u=-unew_iso, z=z)  # unit_cell_average_distorted(GPAim, , z=1)
-    ax[i].imshow(ucellim.T, vmax=np.nanquantile(ucellim, 0.99), vmin=np.nanquantile(ucellim, 0.001))
-    scattercoords = generate_cut(lpks, z, find_shift(ucellim, sigma=2))
-    ax[i].scatter(*find_shift(ucellim, sigma=3))
-    ax[i].scatter(*-rmin*z)
-    print(find_shift(ucellim) + rmin*z, rmin)
-    ax[i].scatter(*scattercoords, c=a_0, alpha=0.3, cmap='plasma')
-
 z = 1
 fig, ax = plt.subplots(ncols=3, figsize=[18, 6])
 for i, lpks in enumerate(combinations(pks+dks, 2)):
@@ -407,7 +336,8 @@ for i, lpks in enumerate(combinations(pks+dks, 2)):
     ucellim = uc.unit_cell_average(np.where(mask, GPAim, np.nan),
                                    np.array(lpks),
                                    u=-unew_iso, z=z)  # unit_cell_average_distorted(GPAim, , z=1)
-    ax[i].imshow(ucellim.T, vmax=np.nanquantile(ucellim, 0.99), vmin=np.nanquantile(ucellim, 0.001))
+    ax[i].imshow(ucellim.T, cmap='gray',
+                 vmax=np.nanquantile(ucellim, 0.99), vmin=np.nanquantile(ucellim, 0.001))
     for direction in np.array([[1, 1], [1, -2], [-2, 1]]):
         scattercoords = generate_cut(lpks, z, find_shift(ucellim, sigma=2), direction=direction)
         ax[i].scatter(*scattercoords, alpha=0.3, cmap='plasma')
@@ -424,6 +354,7 @@ plt.imshow(np.where(~smask2, data3[210], np.nan).T, cmap='gray')
 maskedstack = cull_by_mask(da.where(smask2, data3.astype(float), np.nan), smask2)
 
 
+# +
 def stack_apply(images, inner_func, u):
     """Average images with a distortion u over all it's unit cells
     using a drizzle like approach, scaling the unit cell
@@ -454,9 +385,9 @@ def unit_cell_average_stack(images, ks, u, z=1):
     return res
 
 
-maskedu = cull_by_mask(unew_iso, smask2)
+# -
 
-plt.imshow(uc.unit_cell_average2(maskedstack[100].compute(), (pks+dks)[:2], -maskedu, z=z))
+maskedu = cull_by_mask(unew_iso, smask2)
 
 z = 3
 ucellim = uc.unit_cell_average(maskedstack[100].compute(), (pks+dks)[:2], -maskedu, z=z)
@@ -467,8 +398,6 @@ ucellstack = da.map_blocks(stack_apply,
                            inner_func=func,
                            u=np.moveaxis(-maskedu, 0, -1))
 
-lpks
-
 corners = np.array([[0., 0.],
                     [0., 1.],
                     [1., 0.],
@@ -476,55 +405,14 @@ corners = np.array([[0., 0.],
 cornervals = uc.backward_transform(corners, (pks+dks)[:2])
 plt.scatter(*cornervals.T)
 plt.gca().set_aspect('equal')
-nmperpixel = 1.36
 slicelength = np.linalg.norm(cornervals[-1]-cornervals[0])*nmperpixel
 
 test = ucellstack[220].compute()
 plt.figure(figsize=[8, 5])
-plt.imshow(test.T, vmax=np.nanquantile(test, 0.99), vmin=np.nanquantile(test, 0.01))
+plt.imshow(test.T, cmap='gray',
+           vmax=np.nanquantile(test, 0.99), vmin=np.nanquantile(test, 0.01))
 
 ucellstackc = ucellstack.compute()
-
-
-# +
-
-def plot_stack(images, n, grid=False):
-    """Plot the n-th image from a stack of n images.
-    For interactive use with ipython widgets"""
-    im = images[n, :, :]  # .compute()
-    plt.figure(figsize=[10, 10])
-    plt.imshow(im.T, cmap='gray', vmax=np.nanquantile(im, 0.99), vmin=np.nanquantile(im, 0.01))
-    if grid:
-        plt.grid()
-    plt.show()
-
-
-# For interactive use we can view the original data
-interactive(lambda n: plot_stack(ucellstackc, n),
-            n=widgets.IntSlider(ucellstackc.shape[0]//2, 0, ucellstackc.shape[0]-1, 1, continuous_update=False)
-            )
-
-# +
-ds = xr.load_dataset('./stacking_reflectivity_calculations_bilayer_graphene.nc')
-
-#xsmooth = ds.Reflectivity.data
-xsmooth = ndi.gaussian_filter1d(ds.Reflectivity.data, sigma=5, axis=1)
-plt.subplots(figsize=[7.5, 5], constrained_layout=True)
-pldat = np.log(xsmooth/xsmooth[8])
-pldat = np.concatenate([pldat[9:][::-1], pldat], axis=0)
-energy = (ds.Energy.data-5)*1.04
-plt.matshow(pldat[:, :-140], aspect=2.5, extent=[energy[0], energy[-140], 8.5, -16.5], fignum=0, cmap='seismic',
-            vmin=-2, vmax=2)
-plt.colorbar(label=r'log ($I/{I_{AB}}$)')
-plt.gca().xaxis.set_minor_locator(ticker.MultipleLocator(5))
-pltenergies = [3.5, 14.2, 17, 19.5, 30, 32.5, 40, 44.8, 47, 53]
-for e in pltenergies:
-    plt.axvline(e, color='black', alpha=0.6)
-plt.grid(which='major', axis='y')
-#plt.yticks([-8,-4,0,4,8], ['AC','SP','AB','','AA'])
-plt.yticks([-16, -12, -8, -4, 0, 4, 8], ['AA', '', 'AC', 'SP', 'AB', '', 'AA'])
-plt.xlabel('$E_0$')
-# -
 
 stackingcolors = dict(AB='C3', BA='C3', SP='C4', AA='C5')
 
@@ -542,6 +430,7 @@ for i, direction in enumerate(directions/z):
                                  direction=direction, npoints=700)
     #ax.scatter(*scattercoords, alpha=0.8, cmap='plasma', c=np.arange(scattercoords.shape[1]),)
     ax.scatter(*scattercoords, alpha=0.8, color=f'C{i}', s=3)
+    Es = np.arange(data3.shape[0])
     coords = np.broadcast_arrays(Es[:, None], scattercoords[[0], :], scattercoords[[1], :])
     newEslice = ndi.map_coordinates(np.nan_to_num(ucellstackc), coords)
     slicepos = np.linspace(0, slicelength, len(newEslice[index]))
@@ -576,12 +465,15 @@ ax2.yaxis.tick_right()
 ax2.yaxis.set_label_position("right")
 plt.tight_layout()
 #plt.savefig(os.path.join('plots', 'unitcellaveraginbottom.pdf'), dpi=300)
+# -
+
+# ## Loading calculated reflectivity
+# * Ab-initio scattering data available from https://doi.org/10.4121/16843510
+# * TensorLEED data is from Hibino et al. PRB 80 085406 (2009) https://doi.org/10.1103/PhysRevB.80.085406
 
 # +
+ds = xr.load_dataset('../data/stacking_reflectivity_calculations_bilayer_graphene.nc')
 
-ds = xr.load_dataset('./stacking_reflectivity_calculations_bilayer_graphene.nc')
-
-#xsmooth = ds.Reflectivity.data
 xsmooth = ndi.gaussian_filter1d(ds.Reflectivity.data, sigma=1, axis=1)
 
 pldat = np.log(xsmooth/xsmooth[8])
@@ -602,11 +494,9 @@ plt.gca().xaxis.set_minor_locator(ticker.MultipleLocator(5))
 for e in pltenergies:
     plt.axvline(e, color='black', alpha=0.6)
 plt.grid(which='major', axis='y')
-#plt.yticks([-8,-4,0,4,8], ['AC','SP','AB','','AA'])
 plt.yticks([-16, -12, -8, -4, 0, 4, 8], ['AA', '', 'AC', 'SP', 'AB', '', 'AA'])
 plt.xlabel('$E_0$')
-
-# +
+# -
 
 hibinofolder = '/mnt/storage-linux/stack/Promotie/data/hibino-data'
 files = ['AA', 'AB', 'ABC', 'Boundary']
@@ -614,9 +504,6 @@ hibino = {}
 for key in files:
     hibino[key] = pd.read_csv(os.path.join(hibinofolder, key+'.txt'), engine='python', delimiter=r"\s+")
 hibino['SP'] = hibino['Boundary']
-# -
-
-ds.dx
 
 
 # +
@@ -760,8 +647,6 @@ ax[0].set_title('Slices of unit cell averaged data')
 # plt.tight_layout()
 # plt.savefig(os.path.join('plots', 'unitcellaveragedslices.pdf'))#, dpi=300)
 # -
-
-plt.hist(ldat.ravel(), bins=100)
 
 fig, ax = plt.subplots(ncols=3, figsize=[9, 3], sharey=True, constrained_layout=True)
 ax[1].fill_between([-0.3, 0.3], [15, 15], [38, 38], color='C3', alpha=0.2, zorder=-10)
