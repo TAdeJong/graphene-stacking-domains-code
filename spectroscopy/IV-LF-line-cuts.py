@@ -53,24 +53,6 @@ from pyL5.lib.analysis.container import Container
 # %matplotlib inline
 
 # +
-
-
-# def generate_mask(dataset, mask_value, r=20):
-#    """Generate a boolean mask array covering everything that in
-#    any image in dataset contains mask_value. Perform an
-#    erosion with radius r to create a safety margin."""
-#    mask = ~da.any(dataset == mask_value, axis=0).compute()
-#    mask = erosion(mask, selem=disk(r))
-#    return mask
-
-# def cull_by_mask(data, mask):
-#     """Given a stack of images `data`, remove any rows and columns
-#     fully covered by `mask`."""
-#     xlims = np.where(np.sum(mask,axis=1))[0]
-#     ylims = np.where(np.sum(mask,axis=0))[0]
-#     return data[..., xlims.min():xlims.max()+1, ylims.min():ylims.max()+1]
-
-# +
 folder = '/mnt/storage-linux/speeldata/20201008-XTBLG02'
 names2 = ['20201008_203010_2.3um_445.7_IVhdr_largerFoV',
           '20201008_230111_2.3um_453.9_IVhdrregular_largerFoV_again',
@@ -177,7 +159,7 @@ phases = np.stack([np.angle(g['lockin']) for g in gs])
 wxs = np.array([g['w'][0] for g in gs])
 wys = np.array([g['w'][1] for g in gs])
 
-# + jupyter={"outputs_hidden": true, "source_hidden": true} tags=[]
+# + jupyter={"outputs_hidden": true} tags=[]
 fig, axs = plt.subplots(ncols=3, nrows=3, figsize=[16, 12])
 for i in range(len(gs)):
     dx = pks[i][0] - gs[i]['w'][0]
@@ -197,7 +179,7 @@ for i in range(len(gs)):
     #plt.colorbar(im, ax=axs[2,i])
     axs[1, i].set_title(f"{pks[i][0]:.3f}, {pks[i][1]:.3f}")
 
-# + jupyter={"source_hidden": true, "outputs_hidden": true} tags=[]
+# + jupyter={"outputs_hidden": true} tags=[]
 wadvs = []
 for i in range(3):
     gphase = np.moveaxis(gs[i]['grad'], -1, 0)/2/np.pi
@@ -340,13 +322,9 @@ for i, lpks in enumerate(combinations(pks+dks, 2)):
                  vmax=np.nanquantile(ucellim, 0.99), vmin=np.nanquantile(ucellim, 0.001))
     for direction in np.array([[1, 1], [1, -2], [-2, 1]]):
         scattercoords = generate_cut(lpks, z, find_shift(ucellim, sigma=2), direction=direction)
-        ax[i].scatter(*scattercoords, alpha=0.3, cmap='plasma')
+        ax[i].scatter(*scattercoords, alpha=0.3)
 
 smask2 = (np.where(smask, data3[70], np.nan) > 4.9e4).compute()
-#smask2[:450] = False
-#smask2[1100:] = False
-#smask2[:, :300] = False
-#smask2[:, 920:] = False
 plt.figure(figsize=[12, 12])
 plt.imshow(np.where(smask2, data3[210], np.nan).T)
 plt.imshow(np.where(~smask2, data3[210], np.nan).T, cmap='gray')
@@ -356,11 +334,11 @@ maskedstack = cull_by_mask(da.where(smask2, data3.astype(float), np.nan), smask2
 
 # +
 def stack_apply(images, inner_func, u):
-    """Average images with a distortion u over all it's unit cells
-    using a drizzle like approach, scaling the unit cell
-    up by a factor z.
-    Return an array containing the unit cell
-    and the corresponding weight distrbution."""
+    """
+    Helper function to apply uc.unit_cell_average to a stack of images
+    using da.map_blocks.
+    First homogenizes the image.
+    """
     if images.ndim == 3:
         for image in images:
             res = [inner_func(gauss_homogenize2(image, cull_by_mask(smask2, smask2), sigma=40), u) for i in images]

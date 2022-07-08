@@ -8,10 +8,14 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.14.0
 #   kernelspec:
-#     display_name: Python [conda env:root] *
+#     display_name: Python [conda env:pyL5cupy]
 #     language: python
-#     name: conda-root-py
+#     name: conda-env-pyL5cupy-py
 # ---
+
+# # Comparison of stacking contrast in different bilayer graphene systems
+#
+# In this notebook stacking domains in quasi-freestanding bilayer graphene on silicon carbide (QFBLG), graphene on SiC (MLG), 1-on-1 twisted graphene and 1-on-2 twisted bilayer graphene are compared.
 
 # +
 import matplotlib as mpl
@@ -30,31 +34,11 @@ from pyL5.analysis.DriftCorrection.StatRegistration import StatRegistration
 from pyL5.analysis.CorrectChannelPlate.CorrectChannelPlate import CorrectChannelPlate
 from pyL5.lib.analysis.container import Container
 from dask.distributed import Client, LocalCluster
+from pyGPA.imagetools import generate_mask, cull_by_mask
 
 from skimage.morphology import erosion, disk
 
 # %matplotlib inline
-
-# +
-
-
-def generate_mask(dataset, mask_value, r=20):
-    """Generate a boolean mask array covering everything that in
-    any image in dataset contains mask_value. Perform an
-    erosion with radius r to create a safety margin."""
-    mask = ~da.any(dataset == mask_value, axis=0).compute()
-    mask = erosion(mask, selem=disk(r))
-    return mask
-
-
-def cull_by_mask(data, mask):
-    """Given a stack of images `data`, remove any rows and columns
-    fully covered by `mask`."""
-    xlims = np.where(np.sum(mask, axis=1))[0]
-    ylims = np.where(np.sum(mask, axis=0))[0]
-    return data[..., xlims.min():xlims.max()+1, ylims.min():ylims.max()+1]
-
-
 # -
 
 rfolder = '/mnt/storage-linux/'
@@ -235,106 +219,7 @@ for i in range(4):
 plt.savefig(os.path.join('plots', 'multislice_locs.pdf'))
 # -
 
-fig, axs = plt.subplots(4, figsize=[4.8, 4.5], sharex=True, sharey=True, constrained_layout=True)
-for i, index in enumerate([428, 428, 478, 478]):
-    x = np.linspace(-sla, sla, Inorms[i].shape[1])
-    axs[i].plot(x, Inorms[i][index], color=f'C{i}')
-    axs[i].yaxis.set_label_position("right")
-    axs[i].yaxis.tick_right()
-    axs[i].set_title('efgh'[i], fontweight='bold', loc='left')
-    axs[i].set_xlim(-sla, sla)
-axs[2].set_ylabel(r'                    relative intensity I/$\langle I \rangle$')
-axs[3].set_xlabel('position along slice (nm)')
-plt.savefig(os.path.join('plots', 'multislice_locsr.pdf'))
-# plt.tight_layout(pad=1.01)
-
-# +
-fig, axs = plt.subplots(nrows=5, figsize=[9, 10], constrained_layout=True, sharex=True)
-Inorms = []
-#nmperpixels = []
-meanspectra = []
-for i, Eslice in enumerate(Eslices[:3]):
-    x = np.linspace(-1, 1, Eslice.shape[1])
-    res = np.polyfit(x, Eslice.T, 1)
-    Inormnew = (Eslice-res[0][:, None]*x[None])
-    meanspectrum = Inormnew.mean(axis=1, keepdims=True)
-    Inormnew = Inormnew / meanspectrum
-    meanspectra.append(meanspectrum.squeeze() / multipliers[i])
-    Inorm = Inormnew  # Eslices[1] / Eslices[1].mean(axis=1, keepdims=True)
-    Inorms.append(Inorm)
-    length = lengths[i]/4 * np.array(conts[i]["NMPERPIXEL"])[0]
-    # nmperpixels.append(np.array(conts[i]["NMPERPIXEL"])[0])
-    print(np.abs(np.log(Inorm)).max())
-    im = axs[i+1].imshow(np.log(Inorm).T,
-                         aspect='auto', extent=[energies[i][0], energies[i][-1], -length, length],
-                         # vmax=0.15, vmin=-0.15,
-                         vmax=0.1, vmin=-0.1,
-                         cmap='PuOr',
-                         # vmax=1.2, vmin=0.85
-                         )
-cbar = plt.colorbar(im, ax=axs[1:],
-                    label=r'log(I / $\langle I\rangle$)',
-                    extend='both')
-tick_locator = ticker.MultipleLocator(0.02)
-cbar.locator = tick_locator
-cbar.update_ticks()
-
-# nmperpixels.append(np.array(conts[2]["NMPERPIXEL"])[0])
-
-for ax, r, label in zip(axs[1:], nmperpixels, labels):
-    ax.set_title(label)
-    ax.set_ylabel(f'nm ({r:.1f} nm/pix)')
-axs[-1].set_xlabel('$E_0$ (eV)')
-
-x = np.linspace(-1, 1, Eslices[3].shape[1])
-res = np.polyfit(x, Eslices[3].T, 1)
-Inormnew = (Eslices[3]-res[0][:, None]*x[None])
-meanspectrum = Inormnew.mean(axis=1, keepdims=True)
-Inormnew = Inormnew / meanspectrum
-meanspectra.append(meanspectrum.squeeze() / multipliers[2])
-Inorm = Inormnew
-Inorms.append(Inorm)
-print(np.abs(np.log(Inorm)).max())
-length = lengths[3] / 4*np.array(conts[2]["NMPERPIXEL"])[0]
-axs[4].imshow(np.log(Inorm).T[:200],
-              aspect='auto', extent=[energies[2][0], energies[2][-1], -length, length],
-              # vmax=0.15, vmin=-0.15,
-              vmax=0.1, vmin=-0.1,
-              cmap='PuOr',
-              # vmax=1.2, vmin=0.85
-              )
-axs[4].set_xlim(-2, None)
-
-for i, EGY in enumerate(energies[:3]+[energies[2]]):
-    axs[0].semilogy(EGY, meanspectra[i]*0.25**i, label=labels[i])
-axs[0].legend()
-axs[0].set_ylabel(r'$\langle I\rangle$')
-
-# for i in range(3):
-
-#plt.savefig(os.path.join('plots', 'multislice_sigma=2_nonrenorm.pdf'))
-# -
-
 [np.array(cont["NMPERPIXEL"])[0] for cont in conts]
-
-nmperpixels, 2.23/2.73, 3.7/4.45
-
-4.8/9, 4.1/9
-
-mpl.__version__
-
-fig, axs = plt.subplots(4, figsize=[4.8, 4.5], sharex=True, sharey=True, constrained_layout=True)
-for i, index in enumerate([428, 428, 478, 478]):
-    x = np.linspace(-200, 200, Inorms[i].shape[1])
-    axs[i].plot(x, Inorms[i][index], color=f'C{i}')
-    axs[i].yaxis.set_label_position("right")
-    axs[i].yaxis.tick_right()
-    axs[i].set_title('efgh'[i], fontweight='bold', loc='left')
-    axs[i].set_xlim(-200, 200)
-axs[2].set_ylabel(r'                    relative intensity I/$\langle I \rangle$')
-axs[3].set_xlabel('position along slice (nm)')
-plt.savefig(os.path.join('plots', 'multislice_locsr.pdf'))
-# plt.tight_layout(pad=1.01)
 
 # +
 fig, axs = plt.subplots(nrows=5, figsize=[9, 8], constrained_layout=True, sharex=True,
@@ -408,21 +293,15 @@ for i, ax in enumerate(axs):
 plt.savefig(os.path.join('plots', 'multislice_sigma=0_renorm.pdf'))
 # -
 
-for i, Inorm in enumerate(Inorms):
-    plt.plot(ndi.gaussian_filter1d(Inorm.std(axis=1), sigma=10) - i*0.02)
-
-
-Inormnew = (Eslices[1]-res[0][:, None]*x[None])
-Inormnew = Inormnew / Inormnew.mean(axis=1, keepdims=True)
-
-plt.imshow(Inormnew.T)
-plt.colorbar()
-
-plt.figure(figsize=[18, 8])
-plt.imshow(np.log(Inormnew).T,
-           aspect='auto', extent=[energies[1][0], energies[1][-1], -1, 1],
-           vmax=0.2, vmin=-0.2, cmap='PuOr',
-           # vmax=1.2, vmin=0.85
-           )
-plt.colorbar()
-plt.savefig(os.path.join('plots', 'EMLG_slice_sigma=2.pdf'))
+fig, axs = plt.subplots(4, figsize=[4.8, 4.5], sharex=True, sharey=True, constrained_layout=True)
+for i, index in enumerate([428, 428, 478, 478]):
+    x = np.linspace(-200, 200, Inorms[i].shape[1])
+    axs[i].plot(x, Inorms[i][index], color=f'C{i}')
+    axs[i].yaxis.set_label_position("right")
+    axs[i].yaxis.tick_right()
+    axs[i].set_title('efgh'[i], fontweight='bold', loc='left')
+    axs[i].set_xlim(-200, 200)
+axs[2].set_ylabel(r'                    relative intensity I/$\langle I \rangle$')
+axs[3].set_xlabel('position along slice (nm)')
+plt.savefig(os.path.join('plots', 'multislice_locsr.pdf'))
+plt.tight_layout(pad=1.01)

@@ -13,6 +13,8 @@
 #     name: conda-root-py
 # ---
 
+# # Overviews and crops of details
+
 # +
 import napari
 from scipy import ndimage as ndi
@@ -38,8 +40,6 @@ from skimage.filters import threshold_otsu
 # -
 
 cluster = LocalCUDACluster(threads_per_worker=4, device_memory_limit=0.8)
-cluster
-
 client = Client(cluster)
 client
 
@@ -554,20 +554,3 @@ ax[0].set_ylabel('y ($\\mu$m)')
 ax[1].set_xlabel('x ($\\mu$m)')
 plt.tight_layout(pad=0.8)
 plt.savefig(os.path.join('plots', 'EGsampleoverviews_smoothed.pdf'), dpi=300)
-# -
-
-lattice = latticegen.anylattice_gen(r_k=0.01, theta=0,
-                                    order=1, symmetry=6)
-plt.imshow(lattice.T)
-
-fif, ax = plt.subplots(ncols=4, figsize=[12, 4])
-tot = np.zeros((500, 500))
-for i in range(3):
-
-    lattice = latticegen.anylattice_gen(r_k=0.01, theta=60*i,
-                                        order=1, symmetry=2).compute()
-    tot += lattice
-    ax[i].imshow(lattice.T)
-ax[3].imshow(tot.T)
-
-43*0.5*0.5*np.sqrt(3)

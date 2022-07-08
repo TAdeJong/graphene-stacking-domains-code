@@ -13,6 +13,10 @@
 #     name: pygpa-cupy
 # ---
 
+# # Showcase moiré metrology using LEEM data
+#
+# In this notebook we show that moiré metrology as described by [Halbertal et al. Nat Commun 12, 242 (2021).](https://doi.org/10.1038/s41467-020-20428-1) can also be applied to LEEM data. We use the data from [De Jong et al. Nat Commun 13, 70 (2022).](https://doi.org/10.1038/s41467-021-27646-1), as available from data.4tu.nl: https://doi.org/10.4121/16843510 .
+
 # +
 import matplotlib.pyplot as plt
 from matplotlib import patches, ticker
@@ -22,7 +26,6 @@ from skimage.io import imread
 import colorcet  # noqa: F401
 
 from pyGPA.imagetools import gauss_homogenize2
-
 
 
 # +
@@ -43,8 +46,6 @@ image = dbov_image[3200:5000, 4000:6500].astype(float)
 smooth = gauss_homogenize2(image, image > 2.2e4, sigma=50)
 plt.imshow(image > 2.2e4)
 # -
-
-plt.hist(smooth.ravel(), bins=200)
 
 plt.figure(figsize=[15, 9])
 plt.imshow(smooth > 0.88)  # Magic number blocking out most of the folds

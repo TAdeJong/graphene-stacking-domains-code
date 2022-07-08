@@ -13,6 +13,10 @@
 #     name: pygpa-cupy
 # ---
 
+# # Objective lens sweeps 
+#
+# Rendering objective lens sweeps to study the contrast as function of defocus for some different graphene samples.
+
 # +
 from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.pyplot as plt
