@@ -97,6 +97,29 @@ for i in range(2):
 plt.tight_layout()
 plt.savefig(os.path.join('plots', 'GPAstripe-extract.pdf'))
 
+f, axs = plt.subplots(ncols=2, figsize=[6, 3], constrained_layout=True)
+im = fftplot(fftim.T,  # ndi.filters.gaussian_filter(fftim, sigma=2),
+             d=NMPERPIXEL,
+             pcolormesh=False, ax=axs[1], origin='upper', vmax=2000, cmap='cet_fire_r')
+fftr = 0.09
+axs[1].set_xlim(-fftr, fftr)
+axs[1].set_ylim(fftr, -fftr)
+axs[1].set_xlabel('$k_x$ (periods / nm)')
+axs[1].set_ylabel('$k_y$ (periods / nm)')
+#plt.colorbar(im, ax=axs[0])
+for i, ks in enumerate([pks, pks2[:2]]):
+    axs[1].scatter(*np.concatenate([-ks, ks]).T[::-1]/NMPERPIXEL, marker='o',
+                   s=150, facecolors='none', linewidths=1, edgecolors=f'C{i}')
+axs[1].scatter(*np.stack([-pks2[2], pks2[2]]).T[::-1]/NMPERPIXEL, marker='o',
+               s=150, facecolors='none', linewidths=1, edgecolors=f'C{i}', linestyle='--')
+im = axs[0].imshow(smooth1 - smooth1.mean(), cmap='gray', origin='upper')
+im.set_extent(np.array(im.get_extent())*NMPERPIXEL)
+axs[0].set_xlabel('x (nm)')
+for i in range(2):
+    axs[i].set_title('bc'[i], fontweight='bold', loc='left')
+#plt.tight_layout()
+plt.savefig(os.path.join('plots', 'GPAstripe-extract2.pdf'))
+
 smooth = gauss_homogenize2(crop2, mask=np.ones_like(crop2), sigma=70)
 
 cropped = smooth

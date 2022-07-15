@@ -215,7 +215,9 @@ im = ax[1].imshow(np.where(np.any(np.array(rgbmasks), axis=0),
                   cmap='inferno', interpolation='none', vmax=0.7, vmin=0.2)
 plt.colorbar(im, ax=ax[:2], fraction=0.05, aspect=50)
 ax[1].imshow(smooth[xslice, yslice].T, cmap='gray', vmax=np.quantile(cropped, 0.98), alpha=0.5, vmin=0.75)
-ax[2].hist([np.where(normmag > cutoff, 0.246 / (2*NMPERPIXEL/wavelengths[i]) * 100, np.nan).ravel()
+ax[2].hist([np.where(normmag > cutoff,
+                     0.246 / (2*NMPERPIXEL/wavelengths[i]) * 100,
+                     np.nan).ravel()
             for i in [0, 2, 1]],
            histtype='barstacked', bins=1000, color=list('rbg'),
            orientation='horizontal', range=(0.2, 0.7))

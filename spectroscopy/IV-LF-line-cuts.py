@@ -159,7 +159,7 @@ phases = np.stack([np.angle(g['lockin']) for g in gs])
 wxs = np.array([g['w'][0] for g in gs])
 wys = np.array([g['w'][1] for g in gs])
 
-# + jupyter={"outputs_hidden": true} tags=[]
+# + tags=[]
 fig, axs = plt.subplots(ncols=3, nrows=3, figsize=[16, 12])
 for i in range(len(gs)):
     dx = pks[i][0] - gs[i]['w'][0]
@@ -179,7 +179,7 @@ for i in range(len(gs)):
     #plt.colorbar(im, ax=axs[2,i])
     axs[1, i].set_title(f"{pks[i][0]:.3f}, {pks[i][1]:.3f}")
 
-# + jupyter={"outputs_hidden": true} tags=[]
+# + tags=[]
 wadvs = []
 for i in range(3):
     gphase = np.moveaxis(gs[i]['grad'], -1, 0)/2/np.pi
@@ -598,6 +598,7 @@ for i, newEslice in enumerate(slices):
     for axis in ['left', 'right']:
         ax[i].spines[axis].set_linewidth(4)
         ax[i].spines[axis].set_color(f'C{i}')
+    ax[i].set_title('abcd'[i], fontweight='bold', loc='left')
     ax2 = ax[i].twinx()
     ax2.set_ylim(-0.5*slicelength, 0.5*slicelength)
     ax2.yaxis.set_minor_locator(ticker.MultipleLocator(10))
@@ -613,6 +614,7 @@ im = ax[3].imshow(pldat[:, :-140], aspect='auto',
 plt.colorbar(im, ax=ax[3], label=r'log ($I/{I_{AB}}$)', extend='both', aspect=6)
 ax[3].xaxis.set_minor_locator(ticker.MultipleLocator(5))
 ax[3].xaxis.set_major_locator(ticker.MultipleLocator(10))
+ax[3].set_title('d', fontweight='bold', loc='left')
 # pltenergies = [3.5, 14.2, 17,19.5,30,32.5, 40, 44.8, 47,53]
 # for e in pltenergies:
 #     ax[3].axvline(e, color='black', alpha=0.6)
@@ -623,7 +625,7 @@ ax[3].set_xlabel('$E_0$ (eV)')
 ax[3].set_title('Theory')
 ax[0].set_title('Slices of unit cell averaged data')
 # plt.tight_layout()
-# plt.savefig(os.path.join('plots', 'unitcellaveragedslices.pdf'))#, dpi=300)
+plt.savefig(os.path.join('plots', 'unitcellaveragedslices.pdf'))#, dpi=300)
 # -
 
 fig, ax = plt.subplots(ncols=3, figsize=[9, 3], sharey=True, constrained_layout=True)
@@ -666,3 +668,48 @@ ax2.tick_params(
 ax2.set_ylim(-1, 1)
 # plt.tight_layout()
 plt.savefig(os.path.join('plots', 'unitcellaveragedslicesprojected.pdf'))
+
+# +
+fig, ax = plt.subplots(ncols=1, figsize=[4., 3.], sharey=True, constrained_layout=True)
+ax = [ax]
+ax[0].fill_between([-0.3, 0.3], [15, 15], [38, 38], color='C3', alpha=0.2, zorder=-10)
+ax[0].fill_between([-0.3, 0.3], [15, 15], [-10, -10], color='C4', alpha=0.2, zorder=-10)
+
+# Use MM to crop out edge outliers
+X = slices[1][:10].mean(axis=0, keepdims=True)
+#X = np.abs(X-X.mean()) > 100
+newEslice = slices[1] / X
+ldat = np.log(newEslice / newEslice[:, 230:236].mean(axis=1, keepdims=True))
+cmax = 0.25
+res = np.apply_along_axis(lambda a: np.histogram(a, bins=100, range=(-cmax, cmax))[0], 0, ldat)
+ax[0].imshow(  # res.T,
+    np.where(res > 0, res, np.nan).T,
+    aspect='auto',
+    vmax=80,
+    extent=[-cmax, cmax, -0.5*slicelength, 0.5*slicelength, ],
+    cmap='cet_fire_r', interpolation='none')
+ax[0].yaxis.set_minor_locator(ticker.MultipleLocator(10))
+ax[0].xaxis.set_major_locator(ticker.MultipleLocator(0.1))
+ax[0].set_xlabel(r'log ($I/{I_{AB}}$)')
+for axis in ['left', 'right']:
+    ax[0].spines[axis].set_linewidth(4)
+    ax[0].spines[axis].set_color(f'C{1}')
+ax[0].axhline(38, color='C3', alpha=0.8, linewidth=1.5, zorder=-10)
+ax[0].annotate("", (-0.17, 38), (-0.17, 15),
+               arrowprops=dict(arrowstyle="<|-|>", shrinkA=0, shrinkB=0, color='black'))
+ax[0].axhline(15, color='C4', alpha=0.5, linewidth=1.5, zorder=-10)
+ax[0].axhline(15, color='C3', alpha=0.5, linewidth=1.5, zorder=-10)
+ax[0].axhline(-10, color='C4', alpha=0.8, linewidth=1.5, zorder=-10)
+ax[0].annotate("", (-0.2, -10), (-0.2, 15),
+               arrowprops=dict(arrowstyle="<|-|>", shrinkA=0, shrinkB=0, color='black'))
+ax[0].set_ylabel('nm (approx.)')
+ax2 = ax[0].twinx()
+ax2.set_yticks([-1, -1/3, 0, 1/3, 1], ['AA', 'AB', 'SP', 'BA', 'AA'], fontweight='bold')
+ax2.tick_params(
+    right=False,
+    labelright=True)
+ax2.set_ylim(-1, 1)
+plt.savefig(os.path.join('plots', 'unitcellaveragedslicesprojected_reduced.pdf'))
+# -
+
+

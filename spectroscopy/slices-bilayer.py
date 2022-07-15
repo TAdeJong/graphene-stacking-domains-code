@@ -253,8 +253,12 @@ tick_locator = ticker.MultipleLocator(0.02)
 cbar.locator = tick_locator
 cbar.update_ticks()
 
-for E in pltEGY:
-    axs[0].axvline(E, alpha=0.5, color='black')
+paper = True
+if paper:
+    axs[0].axvline(38,  alpha=0.5, color='black')
+else:
+    for E in pltEGY:
+        axs[0].axvline(E, alpha=0.5, color='black')
 
 #labels = ['QFBLG', 'EMLG', '1-on-2 TBG', '1-on-1 TBG']
 for ax, r, label in zip(axs[1:], nmperpixels, labels):
