@@ -461,7 +461,7 @@ pltenergies = [3.5, 14.2, 17, 19.5, 30, 32.5, 40, 44.8, 47, 53]
 ds
 
 # +
-plt.subplots(figsize=[7.5, 5], constrained_layout=True)
+plt.subplots(figsize=[7.5, 4], constrained_layout=True)
 plt.matshow(pldat,  # [:,:-140],
             aspect=2.5,
             extent=[Krasovenergy[0], Krasovenergy[-1], 8.5, -16.5], fignum=0, cmap='seismic',
@@ -492,6 +492,7 @@ def ks_to_avecs(ks):
     avecs = avecs * latticegen.transformations.r_k_to_a_0(norms)[:, None]
     return avecs
 
+stackingcolors = dict(AB='C3', BA='C3', SP='C4', AA='C5')
 
 fig, axs = plt.subplots(2, figsize=[9, 7], sharex=True)
 
@@ -502,7 +503,7 @@ for ind, l in zip([-8., -4., 8.], ['AB', 'SP', 'AA']):
                     label=l, color=stackingcolors[l])
 axs[0].semilogy(EGY, meanIV, '.', markersize=1, label='mean exp', color='black')
 axs[1].semilogy(EGY, meanIV, '.', markersize=1, label='mean exp', color='black')
-axs[1].legend()
+axs[1].legend(numpoints=8)
 for a in axs:
     a.set_xlim(0, hibino[l]['Energy'].max()-11)
 axs[0].set_title('Ab-initio scattering')
@@ -515,17 +516,19 @@ for a, l in zip(axs, 'ac'):
 
 ax = axs[0].inset_axes([105/155, 0., (155-105)/155, 1])
 
-r_k = 0.065
+S = 1000
+r_k = 0.065 * 500/S
+
 theta = -4.5
 xi = 0.
 ks1 = latticegen.generate_ks(r_k, xi)[:-1]
 ks2 = latticegen.generate_ks(r_k, theta+xi)[:-1]
-shift = np.array([0, -200])
-lattice1 = 0.7*latticegen.hexlattice_gen(r_k, xi, 1, shift=shift)
-lattice2 = latticegen.hexlattice_gen(r_k, theta+xi, 1, shift=shift)
+shift = np.array([0, -200*S/500])
+lattice1 = 0.7*latticegen.hexlattice_gen(r_k, xi, 1, shift=shift, size=S)
+lattice2 = latticegen.hexlattice_gen(r_k, theta+xi, 1, shift=shift, size=S)
 lattice1 = np.clip(lattice1 / lattice1.max(), 0, 1)
 lattice2 = np.clip(lattice2 / lattice2.max(), 0, 1)
-bicmap = 'PRGn'
+bicmap = 'BrBG_r'
 #fig, ax = plt.subplots(figsize=[5,5])
 ax.imshow(-lattice1.T, cmap=bicmap,
           vmax=1,
@@ -555,7 +558,7 @@ for a in avecs[[2, 1]]:
              color='black'
              )
 
-stackingcolors = dict(AB='C3', BA='C3', SP='C4', AA='C5')
+
 for i, label in enumerate(['AA', 'AB', 'BA', 'AA']):
     ax.annotate(label, center + i/3*(avecs[2]+avecs[1]),
                 fontweight='bold', ha="center", va="center",
@@ -564,7 +567,7 @@ for i, label in enumerate(['AA', 'AB', 'BA', 'AA']):
                 bbox=dict(boxstyle="square,pad=0.2",
                           lw=0,
                           fc=stackingcolors[label],
-                          alpha=0.5))
+                          alpha=0.7))
 for vec in [avecs[1], avecs[2], avecs[2]+avecs[1]]:
     ax.annotate('SP', center + 0.5*(vec),
                 fontweight='bold', ha="center", va="center",
@@ -573,12 +576,101 @@ for vec in [avecs[1], avecs[2], avecs[2]+avecs[1]]:
                 bbox=dict(boxstyle="square,pad=0.2",
                           lw=0,
                           fc=stackingcolors['SP'],
-                          alpha=0.5))
-ax.set_xlim(10, 500-10)
+                          alpha=0.7))
+ax.set_xlim(20, S-20)
 ax.set_axis_off()
 ax.set_title('b', loc='left', fontweight='bold')
 plt.tight_layout()
-plt.savefig(os.path.join('plots', 'stackingtheorycurves.pdf'), dpi=300)
+plt.savefig(os.path.join('plots', 'stackingtheorycurves.pdf'), dpi=600)
+
+# +
+fig, axs = plt.subplots(2, figsize=[6, 5.5])
+
+for ind, l in zip([-8., -4., 8.], ['AB', 'SP', 'AA']):
+    axs[1].semilogy(Krasovenergy, ds.Reflectivity.sel(dx=ind).data.T,
+                    label=l, color=stackingcolors[l])
+    #axs[1].semilogy((hibino[l]['Energy']-11), hibino[l]['(0,0)']*2,
+    #                label=l, color=stackingcolors[l])
+axs[1].semilogy(EGY, meanIV, '.', markersize=1, label='mean exp', color='black')
+axs[1].legend()
+
+axs[1].set_title('Ab-initio scattering')
+#axs[1].set_title('TensorLEED')
+axs[1].set_xlabel('$E_0$ (eV)')
+
+for a, l in zip(axs, 'ab'):
+    a.set_title(l, loc='left', fontweight='bold')
+axs[1].xaxis.set_minor_locator(ticker.MultipleLocator(5))
+axs[1].set_xlim(-5,100)
+
+ax = axs[0] #axs[0].inset_axes([105/155, 0., (155-105)/155, 1])
+
+r_k = 0.065
+theta = -3.
+xi = 0.
+ks1 = latticegen.generate_ks(r_k, xi)[:-1]
+ks2 = latticegen.generate_ks(r_k, theta+xi)[:-1]
+shift = np.array([250, -150])
+lattice1 = 0.7*latticegen.hexlattice_gen(r_k, xi, 1, shift=shift, size=(1250,500))
+lattice2 = latticegen.hexlattice_gen(r_k, theta+xi, 1, shift=shift, size=(1250,500))
+lattice1 = np.clip(lattice1 / lattice1.max(), 0, 1)
+lattice2 = np.clip(lattice2 / lattice2.max(), 0, 1)
+bicmap = 'PRGn'
+#fig, ax = plt.subplots(figsize=[5,5])
+ax.imshow(-lattice1.T, cmap=bicmap,
+          vmax=1,
+          vmin=-1,
+          alpha=lattice1.T
+          )
+ax.imshow(lattice2.T, cmap=bicmap,
+          vmax=1,
+          vmin=-1,
+          alpha=lattice2.T)
+avecs = ks_to_avecs(ks2-ks1)
+center = np.array(lattice1.shape)//2 - 0.5 - shift
+
+iv = 3
+iv2 = 2
+ucell = mpl.patches.Polygon(center+np.stack([[0, 0],
+                                             avecs[iv2],
+                                             avecs[iv] + avecs[iv2],
+                                             avecs[iv]]),
+                            closed=True,
+                            fc='none', ec='gray', lw=3)
+ax.add_patch(ucell)
+for a in avecs[[iv, iv2]]:
+    ax.arrow(*center, *a,
+             length_includes_head=True,
+             # width=0.02,
+             # linewidth=0,
+             head_width=10,
+             color='black'
+             )
+
+stackingcolors = dict(AB='C3', BA='C3', SP='C4', AA='C5')
+for i, label in enumerate(['AA', 'AB', 'BA', 'AA']):
+    ax.annotate(label, center + i/3*(avecs[iv]+avecs[iv2]),
+                fontweight='bold', ha="center", va="center",
+                # color=stackingcolors[label],
+                color='white',
+                bbox=dict(boxstyle="square,pad=0.2",
+                          lw=0,
+                          fc=stackingcolors[label],
+                          alpha=0.5))
+for vec in [avecs[iv2], avecs[iv], avecs[iv]+avecs[iv2]]:
+    ax.annotate('SP', center + 0.5*(vec),
+                fontweight='bold', ha="center", va="center",
+                # color=stackingcolors[label],
+                color='white',
+                bbox=dict(boxstyle="square,pad=0.2",
+                          lw=0,
+                          fc=stackingcolors['SP'],
+                          alpha=0.5))
+#ax.set_xlim(10, 500-10)
+ax.set_axis_off()
+#ax.set_title('b', loc='left', fontweight='bold')
+plt.tight_layout()
+plt.savefig(os.path.join('plots', 'stackingtheorycurves_no_hibino.pdf'), dpi=300)
 
 # +
 f, ax = plt.subplots(nrows=4, figsize=[9, 6], sharex=True, constrained_layout=True)

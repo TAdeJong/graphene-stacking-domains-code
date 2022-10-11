@@ -8,9 +8,9 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.14.0
 #   kernelspec:
-#     display_name: Python [conda env:root] *
+#     display_name: Python [conda env:pyGPA-cupy]
 #     language: python
-#     name: conda-root-py
+#     name: conda-env-pyGPA-cupy-py
 # ---
 
 # # Overviews and crops of details
@@ -273,7 +273,7 @@ for k, ax in ax_dict.items():
                         )
     ax.add_artist(scalebar)
 
-plt.savefig(os.path.join('plots', 'EGsampleoverviews_smooth2.pdf'), dpi=300)
+plt.savefig(os.path.join('plots', 'EGsampleoverviews_smooth2.pdf'), dpi=600)
 # -
 
 for key in ['Linköping', 'Braunschweig']:
@@ -286,7 +286,7 @@ area = masks[key].sum().compute() * nmperpixel[key]**2
 print(area)
 
 # +
-f, ax = plt.subplots(ncols=3, figsize=[9, 3.3], sharey=True, constrained_layout=True)
+f, ax = plt.subplots(ncols=3, figsize=[6, 2.5], sharey=True, constrained_layout=True)
 
 r = 250
 cs = [[4600, 2900],
@@ -313,7 +313,7 @@ scalebar = ScaleBar(1e-9, "m", length_fraction=0.25,
                     )
 ax[-1].add_artist(scalebar)
 # plt.tight_layout()
-plt.savefig(os.path.join('plots', 'CQFBLGdetails.pdf'), dpi=300)
+plt.savefig(os.path.join('plots', 'CQFBLGdetails_small.pdf'), dpi=600)
 # -
 
 smooths2 = {key: np.where(smoothingresults[key]['monolabel'],
@@ -353,6 +353,38 @@ scalebar = ScaleBar(1e-9, "m", length_fraction=0.25,
 ax[-1].add_artist(scalebar)
 # plt.tight_layout()
 plt.savefig(os.path.join('plots', 'linkopingdetails.pdf'))
+# -
+
+f, ax = plt.subplots(ncols=2, nrows=2, figsize=[6, 6.3], sharey=True, constrained_layout=True)
+ax = ax.flat
+r = 350
+cs2 = [[2000, 6200],
+       [4600, 3900],
+       [6400, 5400],
+       [4250, 4950]]
+local_ims2 = np.array([smooths2['Linköping'][c[0]-r:c[0]+r, c[1]-r:c[1]+r].compute() for c in cs2])
+vmax = np.quantile(local_ims2, 0.999)
+vmin = np.quantile(local_ims2, 0.001)
+for i, c in enumerate(cs2):
+    im = ax[i].imshow(local_ims2[i].T,
+                      cmap='gray', vmax=vmax, vmin=vmin, interpolation='none')
+    im.set_extent(np.array(im.get_extent())*nmperpixel['Linköping'])
+#ax[1].set_xlabel('x (nm)')
+#ax[0].set_ylabel('y (nm)')
+for i, a in enumerate(ax):
+    a.set_title('abcd'[i], fontweight='bold', loc='left')
+    a.tick_params(
+        bottom=False,      # ticks along the bottom edge are off
+        left=False,
+        labelbottom=False,
+        labelleft=False)
+scalebar = ScaleBar(1e-9, "m", length_fraction=0.25,
+                    location="lower right", box_alpha=0.5,
+                    width_fraction=0.03
+                    )
+ax[-1].add_artist(scalebar)
+# plt.tight_layout()
+plt.savefig(os.path.join('plots', 'linkopingdetails_small.pdf'),  dpi=600)
 
 # +
 f, ax = plt.subplots(ncols=4, figsize=[9, 2.5], sharey=True, constrained_layout=True)
@@ -384,9 +416,39 @@ scalebar = ScaleBar(1e-9, "m", length_fraction=0.25,
 ax[-1].add_artist(scalebar)
 #plt.tight_layout(pad=0.8, w_pad=0.5)
 plt.savefig(os.path.join('plots', 'braunschweigdetails.pdf'), dpi=300)
-# -
 
-nmperpixel
+# +
+f, ax = plt.subplots(ncols=2, nrows=2, figsize=[6, 6.3], sharey=True, constrained_layout=True)
+ax = ax.flat
+
+r = 200
+cs3 = [[3300, 1150],
+       [2840, 4130],
+       [4550, 3150],
+       [3900, 4400], ]
+local_ims3 = np.array([smooths2['Braunschweig'][c[0]-r:c[0]+r, c[1]-r:c[1]+r].compute() for c in cs3])
+vmax = np.quantile(local_ims3, 0.999)
+vmin = np.quantile(local_ims3, 0.001)
+for i, c in enumerate(cs3):
+    im = ax[i].imshow(local_ims3[i].T,
+                      cmap='gray', vmax=vmax, vmin=vmin)
+    im.set_extent(np.array(im.get_extent())*nmperpixel['Braunschweig'])
+#ax[0].set_ylabel('y (nm)')
+for i, a in enumerate(ax):
+    a.set_title('abcd'[i], fontweight='bold', loc='left')
+    a.tick_params(
+        bottom=False,      # ticks along the bottom edge are off
+        left=False,
+        labelbottom=False,
+        labelleft=False)
+scalebar = ScaleBar(1e-9, "m", length_fraction=0.25,
+                    location="lower right", box_alpha=0.5,
+                    width_fraction=0.03
+                    )
+ax[-1].add_artist(scalebar)
+#plt.tight_layout(pad=0.8, w_pad=0.5)
+plt.savefig(os.path.join('plots', 'braunschweigdetails_small.pdf'), dpi=600)
+# -
 
 nmperpixellist = [2.23, 1.36, 1.36, 2.23]
 
@@ -431,6 +493,43 @@ ax[-1].add_artist(scalebar)
 plt.savefig(os.path.join('plots', 'spiraldetails.pdf'), dpi=300)
 
 # +
+f, ax = plt.subplots(ncols=4, figsize=[6, 1.65], constrained_layout=True)
+
+for i, detim in enumerate([local_ims[1][80:230, 100:250],
+                           local_ims2[0][400:646, 254:500],
+                           local_ims2[0][100:346, 100:346],
+                           local_ims3[0][100:250, 100:250]]):
+    if i == 0:
+        vmin = np.quantile(detim, 0.03)
+    elif i in [1, 2]:
+        vmin = np.quantile(local_ims2[0], 0.01)
+    else:
+        vmin = np.min(detim)
+    smoothed = ndi.gaussian_filter(-detim, sigma=[3, 3, 3, 8][i])
+    coordinates = peak_local_max(smoothed, min_distance=[8, 8, 8, 12][i])
+    # print(coordinates)
+    im = ax[i].imshow(detim.T, cmap='gray', vmin=vmin, interpolation='none')
+    # im = ax[i].imshow(smoothed.T, cmap='gray',
+    # vmin=vmin,
+    #                  interpolation='none')
+    im.set_extent(np.array(im.get_extent())*nmperpixellist[i])
+    # ax[i].scatter(*coordinates.T*nmperpixellist[i])
+
+for i, a in enumerate(ax):
+    a.set_title('abcd'[i], fontweight='bold', loc='left')
+    a.tick_params(
+        bottom=False,      # ticks along the bottom edge are off
+        left=False,
+        labelbottom=False,
+        labelleft=False)
+scalebar = ScaleBar(1e-9, "m", length_fraction=0.25,
+                    location="lower right", box_alpha=0.5,
+                    width_fraction=0.03
+                    )
+ax[-1].add_artist(scalebar)
+plt.savefig(os.path.join('plots', 'spiraldetails_small.pdf'), dpi=600)
+
+# +
 
 
 disldata = np.stack([local_ims[1][60:260, 50:250],
@@ -445,7 +544,7 @@ pts_layer.mode = 'add'
 pts_layer.data
 
 # +
-f, ax = plt.subplots(ncols=4, figsize=[9, 2.5], constrained_layout=True)
+f, ax = plt.subplots(ncols=4, figsize=[6, 1.65], constrained_layout=True)
 
 for i, detim in enumerate([local_ims[1][60:260, 50:250],
                            local_ims3[1][100:300, 200:],
@@ -487,7 +586,7 @@ scalebar = ScaleBar(1e-9, "m", length_fraction=0.25,
                     width_fraction=0.03
                     )
 ax[-1].add_artist(scalebar)
-plt.savefig(os.path.join('plots', 'dislocationdetails.pdf'), dpi=300)
+plt.savefig(os.path.join('plots', 'dislocationdetails_small.pdf'), dpi=300)
 # -
 
 nmperpixel
@@ -497,60 +596,3 @@ nmperpixel
 # 10 pix CQFBLG = 22nm
 #
 # 14 pix linkoping = 19nm
-
-# +
-f, ax = plt.subplots(ncols=4, figsize=[9, 3.3], constrained_layout=True)
-
-for i, detim in enumerate([local_ims[1][80:230, 100:250],
-                           local_ims2[0][400:646, 254:500],
-                           local_ims2[0][100:346, 100:346],
-                           local_ims3[0][100:250, 100:250]]):
-    if i == 0:
-        vmin = np.quantile(detim, 0.03)
-    elif i in [1, 2]:
-        vmin = np.quantile(local_ims2[0], 0.01)
-    else:
-        vmin = np.min(detim)
-    smoothed = ndi.gaussian_filter(-detim, sigma=[3, 3, 3, 8][i])
-    coordinates = peak_local_max(smoothed, min_distance=[8, 8, 8, 12][i])
-    # print(coordinates)
-    im = ax[i].imshow(np.abs(np.fft.fftshift(np.fft.fft2(detim-detim.mean()))),
-                      vmax=5e2)  # , cmap='gray', vmin=vmin, interpolation='none')
-    # im = ax[i].imshow(smoothed.T, cmap='gray',
-    # vmin=vmin,
-    #                  interpolation='none')
-    r = 0.1
-    im.set_extent([-0.5, 0.5, -0.5, 0.5])
-    ax[i].set_xlim(-r, r)
-    ax[i].set_ylim(-r, r)
-    # ax[i].scatter(*coordinates.T*nmperpixellist[i])
-
-for i, a in enumerate(ax):
-    a.set_title('abcd'[i], fontweight='bold', loc='left')
-    # a.tick_params(
-    #    bottom=False,      # ticks along the bottom edge are off
-    #    left=False,
-    #    labelbottom=False,
-    #    labelleft=False)
-
-# -
-
-theta = np.deg2rad(15)
-np.rad2deg(theta - np.arcsin(np.sin(theta)/1.005))
-
-# +
-f, ax = plt.subplots(ncols=3, figsize=[9, 3.5], sharey=True)
-
-for i, key in enumerate(images.keys()):
-    maxl = 1300+int(3300*2.23/nmperpixel[key])
-    plim = smooths[key][1300:maxl, 1300:maxl].compute()
-    im = ax[i].imshow(plim.T, cmap='gray',
-                      vmax=np.quantile(plim, 0.999),
-                      vmin=np.quantile(plim, 0.001))  # , interpolation='none')
-    im.set_extent(np.array(im.get_extent())*nmperpixel[key]/1000)
-    # ax[i].set_title(key)
-    ax[i].set_title("abc"[i], fontweight='bold', loc='left')
-ax[0].set_ylabel('y ($\\mu$m)')
-ax[1].set_xlabel('x ($\\mu$m)')
-plt.tight_layout(pad=0.8)
-plt.savefig(os.path.join('plots', 'EGsampleoverviews_smoothed.pdf'), dpi=300)

@@ -8,9 +8,9 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.14.0
 #   kernelspec:
-#     display_name: pyGPA-cupy
+#     display_name: Python [conda env:pyL5cupy]
 #     language: python
-#     name: pygpa-cupy
+#     name: conda-env-pyL5cupy-py
 # ---
 
 # # Objective lens sweeps 
@@ -101,3 +101,37 @@ scalebar = ScaleBar(0.88e-9, "m", length_fraction=0.25,
                     )
 axs[-1].add_artist(scalebar)
 plt.savefig(os.path.join('plots', 'defocusseries_large_angle.pdf'), dpi=600)
+
+# +
+fig, axs = plt.subplots(ncols=5, figsize=[9, 2], constrained_layout=True)
+
+ldat = data[names[0]]
+
+ldat = ldat / np.array(conts[names[0]]['MULTIPLIER'])[:, None, None]
+
+ldat = ldat[:, 690:870, 480:660].compute()
+
+extrema = np.quantile(ldat, [0.0001, 0.9999])
+
+for i, ax in enumerate(axs):
+    j = int(i*4.5+1)
+    print(j)
+    ax.imshow(ldat[j].T, cmap='gray',
+              vmax=extrema[1], vmin=extrema[0])
+    ax.set_title(f"{(conts[names[0]]['OBJ'][j] - conts[names[0]]['OBJ'][10])*1e3:.2f} mA")
+    ax.tick_params(
+        bottom=False,      # ticks along the bottom edge are off
+        left=False,
+        labelbottom=False,
+        labelleft=False)
+scalebar = ScaleBar(0.88e-9, "m", length_fraction=0.35,
+                    location="lower right", box_alpha=0.3,
+                    width_fraction=0.04
+                    )
+axs[-1].add_artist(scalebar)
+plt.savefig(os.path.join('plots', 'defocusseries_large_angle_zoom.pdf'), dpi=600)
+# -
+
+(870-690)*0.88
+
+
