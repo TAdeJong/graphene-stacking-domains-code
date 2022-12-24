@@ -592,7 +592,7 @@ for ind, l in zip([-8., -4., 8.], ['AB', 'SP', 'AA']):
     #axs[1].semilogy((hibino[l]['Energy']-11), hibino[l]['(0,0)']*2,
     #                label=l, color=stackingcolors[l])
 axs[1].semilogy(EGY, meanIV, '.', markersize=1, label='mean exp', color='black')
-axs[1].legend()
+axs[1].legend(numpoints=8)
 
 axs[1].set_title('Ab-initio scattering')
 #axs[1].set_title('TensorLEED')
@@ -774,12 +774,14 @@ newEslice = slices[1] / X
 ldat = np.log(newEslice / newEslice[:, 230:236].mean(axis=1, keepdims=True))
 cmax = 0.25
 res = np.apply_along_axis(lambda a: np.histogram(a, bins=100, range=(-cmax, cmax))[0], 0, ldat)
-ax[0].imshow(  # res.T,
+im = ax[0].imshow(  # res.T,
     np.where(res > 0, res, np.nan).T,
     aspect='auto',
-    vmax=80,
+    vmax=80, 
+    vmin=0,
     extent=[-cmax, cmax, -0.5*slicelength, 0.5*slicelength, ],
     cmap='cet_fire_r', interpolation='none')
+plt.colorbar(im, label='counts', extend='max')
 ax[0].yaxis.set_minor_locator(ticker.MultipleLocator(10))
 ax[0].xaxis.set_major_locator(ticker.MultipleLocator(0.1))
 ax[0].set_xlabel(r'log ($I/{I_{AB}}$)')

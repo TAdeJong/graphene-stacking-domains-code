@@ -253,6 +253,8 @@ tick_locator = ticker.MultipleLocator(0.02)
 cbar.locator = tick_locator
 cbar.update_ticks()
 
+
+
 paper = True
 if paper:
     axs[0].axvline(38,  alpha=0.5, color='black')
@@ -260,7 +262,7 @@ else:
     for E in pltEGY:
         axs[0].axvline(E, alpha=0.5, color='black')
 
-#labels = ['QFBLG', 'EMLG', '1-on-2 TBG', '1-on-1 TBG']
+labels = ['QFBLG', 'EMLG', '1-on-2 TBG', '1-on-1 TBG']
 for ax, r, label in zip(axs[1:], nmperpixels, labels):
     ax.set_title(label)
     ax.set_ylabel(f'(nm)')
@@ -289,23 +291,54 @@ for i, EGY in enumerate(energies[:3]+[energies[2]]):
     axs[0].semilogy(EGY, meanspectra[i]*0.25**i, label=labels[i])
     axs[i+1].yaxis.set_major_locator(ticker.MultipleLocator(80))
 axs[0].legend()
-axs[0].set_ylabel(r'$\langle I\rangle$')
+axs[0].set_ylabel(r'$\langle I\rangle$ (shifted)')
 
 for i, ax in enumerate(axs):
     ax.set_title('abcde'[i], fontweight='bold', loc='left')
+    
+axs[0].set_yticks([1, 0.01, 0.0001])
+axs[0].set_yticks([0.1, 0.001], labels=[], minor=True)
 
-plt.savefig(os.path.join('plots', 'multislice_sigma=0_renorm.pdf'))
+plt.savefig(os.path.join('plots', 'multislice_sigma=0_renorm_paper.pdf'))
 # -
 
 fig, axs = plt.subplots(4, figsize=[4.8, 4.5], sharex=True, sharey=True, constrained_layout=True)
 for i, index in enumerate([428, 428, 478, 478]):
-    x = np.linspace(-200, 200, Inorms[i].shape[1])
+    x = np.linspace(-length, length, Inorms[i].shape[1])
     axs[i].plot(x, Inorms[i][index], color=f'C{i}')
     axs[i].yaxis.set_label_position("right")
     axs[i].yaxis.tick_right()
     axs[i].set_title('efgh'[i], fontweight='bold', loc='left')
-    axs[i].set_xlim(-200, 200)
+    axs[i].set_xlim(-length, length)
 axs[2].set_ylabel(r'                    relative intensity I/$\langle I \rangle$')
 axs[3].set_xlabel('position along slice (nm)')
 plt.savefig(os.path.join('plots', 'multislice_locsr.pdf'))
 plt.tight_layout(pad=1.01)
+
+# +
+fig, axs = plt.subplots(2,2, figsize=[4.8, 2.5], sharex=True, sharey=True, constrained_layout=True)
+axs = axs.flat
+for i, index in enumerate([428, 428, 478, 478]):
+    x = np.linspace(length, -length, Inorms[i].shape[1])
+    axs[i].plot(x, Inorms[i][index], color=f'C{i}')
+    
+    axs[i].yaxis.tick_right()
+    axs[i].set_title('efgh'[i], fontweight='bold', loc='left')
+    axs[i].set_xlim(-length, length)
+    axs[i].tick_params(axis='y', which='both', labelleft=False, labelright=(i%2 ==1))
+    axs[i].xaxis.set_major_locator(ticker.MultipleLocator(80))
+
+xticks = axs[3].xaxis.get_major_ticks()
+xticks[1].label1.set_visible(False)
+axs[3].yaxis.set_label_position("right")
+axs[3].set_ylabel(r'                       relative intensity I/$\langle I \rangle$')
+#axs[3].set_xlabel('position along slice (nm)')
+axs[2].set_xlabel(r'                                                 position along slice (nm)')
+
+plt.savefig(os.path.join('plots', 'multislice_locsr.pdf'))
+#plt.tight_layout(pad=1.01)
+# -
+
+labels
+
+
