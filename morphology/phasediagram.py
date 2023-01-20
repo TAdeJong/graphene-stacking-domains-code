@@ -32,7 +32,7 @@ stackingcolors = dict(AB='C3', BA='C3', SP='C4', AA='C5')
 
 # +
 a = 0.246*1e-9
-l = a/np.sqrt(3) #0.1430*1e-9 # nm, bondlength graphene 
+l = a / np.sqrt(3) #0.1430*1e-9 # nm, bondlength graphene 
 nu = 0.174
 k = 331 # J/m^2, elastic constant under uniaxial stress
 
@@ -61,7 +61,7 @@ def GSFE(ux, uy, k0=2*np.pi/(3*0.142), Vmax=1.61):
     return 2*Vmax*(3/2 + res)
 
 def W0(Vmax=Vmax):
-    return np.sqrt(k*l*l*Vmax/(1-nu*nu))*(3*np.sqrt(3)/np.pi -1)
+    return np.sqrt(k*l*l*Vmax/(1-nu*nu)) * (3*np.sqrt(3)/np.pi -1)
 
 def epsilonc0(Vmax=Vmax):
     return (1-nu)*W0(Vmax) / (k*l)
@@ -84,6 +84,15 @@ def epsilon2triperiod(epsilon):
     """
     return l/epsilon
 
+def triperiod2epsilon(L):
+    """Naive epsilon from triangles period
+    c.f.  the  operation:
+    eps = 0.246 / (NMPERPIXEL/wavelengths[i])
+        = 0.246 * wavelengths[i] / NMPERPIXEL
+    eps = a * pks / NMPERPIXEL
+    """
+    return l/L
+
 def L0(epsilon, Vmax=Vmax):
     """network period for the triangular phase
     
@@ -92,20 +101,30 @@ def L0(epsilon, Vmax=Vmax):
     As defined by Lebedeva and Popov in:
     https://doi.org/10.1103/PhysRevLett.124.116101
     """
-    factor = np.sqrt(3)*(7+4*nu)/(4*(1+nu))
-    return factor * l / (epsilon-epsilonc0(Vmax=Vmax))
+    factor = np.sqrt(3) * (7 + 4*nu) / (4 * (1+nu))
+    return factor * l / (epsilon - epsilonc0(Vmax=Vmax))
+
+def L0_to_eps(L, Vmax=Vmax):
+    factor = np.sqrt(3) * (7 + 4*nu) / (4 * (1+nu))
+    return epsilonc0(Vmax=Vmax) + factor * l/L
 
 def L0s(epsilon, Vmax=Vmax):
     """stripe period
     
     For the periodicity of the full lattice, i.e.
     linespacing is L0s() / 2
-    As defined by Lebedeva and Popov in:
+    As defined by Lebedeva and Popov in eq. 17 in:
     https://doi.org/10.1103/PhysRevLett.124.116101
     """
     factor = np.sqrt(3)/(2*(1+nu))
-    epsilonc0s = epsilonc0(Vmax=Vmax)*np.sqrt((7-nu)/6)
+    epsilonc0s = epsilonc0(Vmax=Vmax) * np.sqrt((7-nu) / 6)
     return factor * l / (epsilon-epsilonc0s)
+
+def L0s_to_eps(L, Vmax=Vmax):
+    """Inverse of L0s"""
+    factor = np.sqrt(3)/(2*(1+nu))
+    epsilonc0s = epsilonc0(Vmax=Vmax) * np.sqrt((7-nu) / 6)
+    return epsilonc0s + factor * l/L
 
 def L0s2(epsilon, Vmax=Vmax):
     """stripe period large eps
@@ -114,11 +133,16 @@ def L0s2(epsilon, Vmax=Vmax):
     
     For the periodicity of the full lattice, i.e.
     linespacing is L0s() / 2
-    As defined by Lebedeva and Popov in:
+    As defined by Lebedeva and Popov in eq. 21 in:
     https://doi.org/10.1103/PhysRevLett.124.116101
     """
-    factor = (7-nu)/(2*np.sqrt(3)*(1+nu))
-    return factor * l / epsilon
+    factor = (7-nu) / (2*np.sqrt(3)*(1+nu))
+    return factor * l/epsilon
+
+def L0s2_to_eps(L, Vmax=Vmax):
+    """Inverse of L0s2"""
+    factor = (7-nu) / (2*np.sqrt(3)*(1+nu))
+    return factor * l/L
 
 
 # -
@@ -127,10 +151,7 @@ def L0s2(epsilon, Vmax=Vmax):
 # a*pks = 1 - 1/(1+epsilon) = (epsilon)/(1+epsilon)
 
 Vmax = 1.61e-3*value('electron volt') / uc_area*2
-
-1.61e-3*value('electron volt') / uc_area*2
-
-np.sqrt(k / (1.61e-3*value('electron volt')/uc_area*2*(1-nu*nu))) * l / 2
+Vmax
 
 for e in [epsilonc0(Vmax), epsilonc1(Vmax), epsilonc2(Vmax)]:
     print(e, epsilon2triperiod(e)*1e9*2/np.sqrt(3))
@@ -189,7 +210,7 @@ fig, ax = plt.subplots(figsize=[6, 3.5], constrained_layout=True)
 
 Vnew = Vmax 
 
-eps = np.linspace(0,epsilonc2(Vmax=Vnew)+1e-3, 5000)
+eps = np.linspace(0, epsilonc2(Vmax=Vnew)+1e-3, 5000)
 
 tri = np.logical_and(eps > epsilonc0(Vmax=Vnew),
                             eps < epsilonc1(Vmax=Vnew)
@@ -213,8 +234,8 @@ ax.semilogy(eps[select]*100,
             linestyle=':', color='C1')
 
 
-scale = (stripeps-epsilonc1(Vmax=Vnew)) / (epsilonc2(Vmax=Vnew) - epsilonc1(Vmax=Vnew))
-vals = (1-scale)*L0s(stripeps, Vmax=Vnew) + scale*L0s2(stripeps, Vmax=Vnew)
+scale = (stripeps - epsilonc1(Vmax=Vnew)) / (epsilonc2(Vmax=Vnew) - epsilonc1(Vmax=Vnew))
+vals = (1-scale) * L0s(stripeps, Vmax=Vnew) + scale * L0s2(stripeps, Vmax=Vnew)
 ax.semilogy(stripeps*100,
             vals/2 * 1e6, label='stripe', color='C1')
 #ax.semilogy(eps[eps>epsilonc1()]*100,
@@ -248,6 +269,73 @@ ax.set_ylim(None,1e1)
 ax.set_xlabel('ϵ (%)')
 ax.set_ylabel('1/k (μm)')
 ax.set_title('a', fontweight='bold', loc='left')
+ax.annotate(r'$\epsilon_{c0}$', (epsilonc0(Vnew)*100, 4e-3), xytext=(-5,5),
+            textcoords='offset points', ha='right', size='large')
+ax.annotate(r'$\epsilon_{c1}$', (epsilonc1(Vnew)*100, 4e-3), xytext=(5,5),
+            textcoords='offset points', ha='left', size='large')
+ax.annotate(r'$\epsilon_{c2}$', (epsilonc2(Vnew)*100, 4e-3), xytext=(5,5),
+            textcoords='offset points', ha='left', size='large')
+
+
+# +
+fig, ax = plt.subplots(figsize=[5, 3], constrained_layout=True)
+
+Vnew = Vmax 
+
+eps = np.linspace(0, epsilonc2(Vmax=Vnew)+1e-3, 5000)
+
+tri = np.logical_and(eps > epsilonc0(Vmax=Vnew),
+                            eps < epsilonc1(Vmax=Vnew)
+                           )
+ax.semilogy(eps[tri]*100,
+             L0(eps[tri], Vmax=Vnew)/np.sqrt(3) * 1e6,
+            label='triangular', color='C0')
+
+
+stripe = np.logical_and(eps > epsilonc1(Vmax=Vnew),
+                        eps < epsilonc2(Vmax=Vnew))
+stripeps = eps[stripe]
+ax.semilogy(stripeps*100,
+             L0(stripeps, Vmax=Vnew)/np.sqrt(3) * 1e6,
+            linestyle=':', color='C0')
+
+select = np.logical_and(eps > epsilonc0s(Vmax=Vnew),
+                            eps < epsilonc1(Vmax=Vnew))
+ax.semilogy(eps[select]*100,
+             L0s(eps[select], Vmax=Vnew)/2 * 1e6,
+            linestyle=':', color='C1')
+
+
+scale = (stripeps - epsilonc1(Vmax=Vnew)) / (epsilonc2(Vmax=Vnew) - epsilonc1(Vmax=Vnew))
+vals = (1-scale) * L0s(stripeps, Vmax=Vnew) + scale * L0s2(stripeps, Vmax=Vnew)
+ax.semilogy(stripeps*100,
+            vals/2 * 1e6, label='stripe', color='C1')
+
+
+ax.semilogy(eps*100, 
+            np.where(stripe, epsilon2triperiod(eps)/2,
+                     epsilon2triperiod(eps))* 1e6,
+            label='non-interacting', color='C2')
+
+ax.semilogy(eps[tri]*100,
+             epsilon2triperiod(eps[tri])/2 * 1e6,
+            linestyle=':', color='C2')
+ax.semilogy(eps[stripe]*100,
+             epsilon2triperiod(eps[stripe]) * 1e6,
+            linestyle=':', color='C2')
+
+
+
+plt.margins(x=0.01)
+for e in [epsilonc0(Vnew), epsilonc1(Vnew), epsilonc2(Vnew)]:
+    ax.axvline(e*100, alpha=0.3, color='black')
+ax.legend()
+ax.set_ylim(None,1e1)
+ax.set_xlabel('ϵ (%)')
+ax.set_ylabel('1/k (μm)')
+ax.set_title('(a)',
+             #fontweight='bold',
+             loc='left')
 ax.annotate(r'$\epsilon_{c0}$', (epsilonc0(Vnew)*100, 4e-3), xytext=(-5,5),
             textcoords='offset points', ha='right', size='large')
 ax.annotate(r'$\epsilon_{c1}$', (epsilonc1(Vnew)*100, 4e-3), xytext=(5,5),

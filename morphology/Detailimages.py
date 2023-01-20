@@ -97,7 +97,7 @@ ax[0].set_ylabel('y ($\\mu$m)')
 ax[1].set_xlabel('x ($\\mu$m)')
 ax[0].yaxis.set_major_locator(MultipleLocator(1))
 # plt.tight_layout()
-plt.savefig(os.path.join('plots', 'EGsampleoverviews.pdf'), dpi=300)
+#plt.savefig(os.path.join('plots', 'EGsampleoverviews.pdf'), dpi=300)
 
 # +
 f, ax = plt.subplots(ncols=3, figsize=[9, 3.5], sharey=True)
@@ -211,7 +211,7 @@ for i, key in enumerate(['Linköping', 'Braunschweig']):
 
     # ax[i].axvline(thres)
 
-    ax[i].set_title("abc"[i], fontweight='bold', loc='left')
+    ax[i].set_title("({})".format("abc"[i]), fontweight='bold', loc='left')
 plt.tight_layout()
 
 
@@ -225,8 +225,9 @@ ax_dict = fig.subplot_mosaic(layout,  gridspec_kw={
     "height_ratios": [2.1, 1]}
 )
 for k, ax in ax_dict.items():
-    ax.text(0.25, 0.25, k, transform=ax.transData,
-            fontsize=14, fontweight='bold', va='top', ha='left',
+    ax.text(0.25, 0.25, "({})".format(k), transform=ax.transData,
+            fontsize=14, #fontweight='bold', 
+            va='top', ha='left',
             bbox=dict(facecolor='none', alpha=0.9, edgecolor='none'))
     ax.tick_params(
         bottom=False,      # ticks along the bottom edge are off
@@ -286,7 +287,7 @@ area = masks[key].sum().compute() * nmperpixel[key]**2
 print(area)
 
 # +
-f, ax = plt.subplots(ncols=3, figsize=[6, 2.5], sharey=True, constrained_layout=True)
+f, ax = plt.subplots(ncols=3, figsize=[5, 1.8], sharey=True, constrained_layout=True)
 
 r = 250
 cs = [[4600, 2900],
@@ -301,7 +302,9 @@ for i, c in enumerate(cs):
 #ax[1].set_xlabel('x (nm)')
 #ax[0].set_ylabel('y (nm)')
 for i, a in enumerate(ax):
-    a.set_title('abc'[i], fontweight='bold', loc='left')
+    a.set_title("({})".format('abc'[i]), 
+                #fontweight='bold',
+                loc='left')
     a.tick_params(
         bottom=False,      # ticks along the bottom edge are off
         left=False,
@@ -352,10 +355,10 @@ scalebar = ScaleBar(1e-9, "m", length_fraction=0.25,
                     )
 ax[-1].add_artist(scalebar)
 # plt.tight_layout()
-plt.savefig(os.path.join('plots', 'linkopingdetails.pdf'))
+#plt.savefig(os.path.join('plots', 'linkopingdetails.pdf'))
 # -
 
-f, ax = plt.subplots(ncols=2, nrows=2, figsize=[6, 6.3], sharey=True, constrained_layout=True)
+f, ax = plt.subplots(ncols=2, nrows=2, figsize=[5, 5.4], sharey=True, constrained_layout=True)
 ax = ax.flat
 r = 350
 cs2 = [[2000, 6200],
@@ -372,7 +375,8 @@ for i, c in enumerate(cs2):
 #ax[1].set_xlabel('x (nm)')
 #ax[0].set_ylabel('y (nm)')
 for i, a in enumerate(ax):
-    a.set_title('abcd'[i], fontweight='bold', loc='left')
+    a.set_title("({})".format('abcd'[i]),# fontweight='bold',
+                loc='left')
     a.tick_params(
         bottom=False,      # ticks along the bottom edge are off
         left=False,
@@ -418,7 +422,7 @@ ax[-1].add_artist(scalebar)
 plt.savefig(os.path.join('plots', 'braunschweigdetails.pdf'), dpi=300)
 
 # +
-f, ax = plt.subplots(ncols=2, nrows=2, figsize=[6, 6.3], sharey=True, constrained_layout=True)
+f, ax = plt.subplots(ncols=2, nrows=2, figsize=[5, 5.4], sharey=True, constrained_layout=True)
 ax = ax.flat
 
 r = 200
@@ -435,7 +439,8 @@ for i, c in enumerate(cs3):
     im.set_extent(np.array(im.get_extent())*nmperpixel['Braunschweig'])
 #ax[0].set_ylabel('y (nm)')
 for i, a in enumerate(ax):
-    a.set_title('abcd'[i], fontweight='bold', loc='left')
+    a.set_title("({})".format('abcd'[i]),# fontweight='bold',
+                loc='left')
     a.tick_params(
         bottom=False,      # ticks along the bottom edge are off
         left=False,
@@ -471,7 +476,8 @@ for i, detim in enumerate([local_ims[1][80:230, 100:250],
     smoothed = ndi.gaussian_filter(-detim, sigma=[3, 3, 3, 8][i])
     coordinates = peak_local_max(smoothed, min_distance=[8, 8, 8, 12][i])
     # print(coordinates)
-    im = ax[i].imshow(detim.T, cmap='gray', vmin=vmin, interpolation='none')
+    im = ax[i].imshow(detim.T, cmap='gray', 
+                      vmin=vmin, interpolation='none')
     # im = ax[i].imshow(smoothed.T, cmap='gray',
     # vmin=vmin,
     #                  interpolation='none')
@@ -493,7 +499,7 @@ ax[-1].add_artist(scalebar)
 plt.savefig(os.path.join('plots', 'spiraldetails.pdf'), dpi=300)
 
 # +
-f, ax = plt.subplots(ncols=4, figsize=[6, 1.65], constrained_layout=True)
+f, ax = plt.subplots(ncols=4, figsize=[5, 1.5], constrained_layout=True)
 
 for i, detim in enumerate([local_ims[1][80:230, 100:250],
                            local_ims2[0][400:646, 254:500],
@@ -508,7 +514,9 @@ for i, detim in enumerate([local_ims[1][80:230, 100:250],
     smoothed = ndi.gaussian_filter(-detim, sigma=[3, 3, 3, 8][i])
     coordinates = peak_local_max(smoothed, min_distance=[8, 8, 8, 12][i])
     # print(coordinates)
-    im = ax[i].imshow(detim.T, cmap='gray', vmin=vmin, interpolation='none')
+    im = ax[i].imshow(detim.T, cmap='gray',
+                      vmin=vmin, interpolation='none',
+                     vmax = np.quantile(detim, 0.995))
     # im = ax[i].imshow(smoothed.T, cmap='gray',
     # vmin=vmin,
     #                  interpolation='none')
@@ -516,7 +524,8 @@ for i, detim in enumerate([local_ims[1][80:230, 100:250],
     # ax[i].scatter(*coordinates.T*nmperpixellist[i])
 
 for i, a in enumerate(ax):
-    a.set_title('abcd'[i], fontweight='bold', loc='left')
+    a.set_title("({})".format('abcd'[i]),# fontweight='bold',
+                loc='left')
     a.tick_params(
         bottom=False,      # ticks along the bottom edge are off
         left=False,
@@ -544,7 +553,7 @@ pts_layer.mode = 'add'
 pts_layer.data
 
 # +
-f, ax = plt.subplots(ncols=4, figsize=[6, 1.65], constrained_layout=True)
+f, ax = plt.subplots(ncols=4, figsize=[5, 1.5], constrained_layout=True)
 
 for i, detim in enumerate([local_ims[1][60:260, 50:250],
                            local_ims3[1][100:300, 200:],
@@ -564,34 +573,30 @@ for i, detim in enumerate([local_ims[1][60:260, 50:250],
     im.set_extent(np.array(im.get_extent())*nmperpixellist[i])
     # ax[i].scatter(*coordinates.T*nmperpixellist[i])
 
-domains = [pts_layer.data[:4], pts_layer.data[4:7], pts_layer.data[7:]]
-for j, domain in enumerate(domains):
-    i = int(domain[0, 0])
-    ax[i].scatter(domain[:, 2]*nmperpixellist[i], domain[:, 1]*nmperpixellist[i], alpha=0.9, color=f'C{j}')
+#domains = [pts_layer.data[:4], pts_layer.data[4:7], pts_layer.data[7:]]
+#for j, domain in enumerate(domains):
+#    i = int(domain[0, 0])
+#    ax[i].scatter(domain[:, 2]*nmperpixellist[i], domain[:, 1]*nmperpixellist[i], alpha=0.9, color=f'C{j}')
 
-p = pts_layer.data[3]
-i = int(p[0])
-ax[i].scatter(p[2]*nmperpixellist[i], p[1]*nmperpixellist[i],
-              alpha=0.6, color='C1', s=20)
+#p = pts_layer.data[3]
+#i = int(p[0])
+#ax[i].scatter(p[2]*nmperpixellist[i], p[1]*nmperpixellist[i],
+#              alpha=0.6, color='C1', s=20)
 
 for i, a in enumerate(ax):
-    a.set_title('abcd'[i], fontweight='bold', loc='left')
+    a.set_title(f"({'abcd'[i]})", loc='left')
     a.tick_params(
         bottom=False,      # ticks along the bottom edge are off
         left=False,
         labelbottom=False,
         labelleft=False)
-scalebar = ScaleBar(1e-9, "m", length_fraction=0.25,
+scalebar = ScaleBar(1e-9, "m", length_fraction=0.3,
                     location="lower right", box_alpha=0.5,
-                    width_fraction=0.03
+                    width_fraction=0.05
                     )
 ax[-1].add_artist(scalebar)
 plt.savefig(os.path.join('plots', 'dislocationdetails_small.pdf'), dpi=300)
 # -
-
-nmperpixel
-
-14*1.36
 
 # 10 pix CQFBLG = 22nm
 #

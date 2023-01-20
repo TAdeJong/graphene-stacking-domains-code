@@ -95,9 +95,11 @@ axs[0].set_xlabel('x (nm)')
 for i in range(2):
     axs[i].set_title('ab'[i], fontweight='bold', loc='left')
 plt.tight_layout()
-plt.savefig(os.path.join('plots', 'GPAstripe-extract.pdf'))
+#plt.savefig(os.path.join('plots', 'GPAstripe-extract.pdf'))
 
-f, axs = plt.subplots(ncols=2, figsize=[6, 3], constrained_layout=True)
+from matplotlib import ticker
+
+f, axs = plt.subplots(ncols=2, figsize=[5, 2.65], constrained_layout=True)
 im = fftplot(fftim.T,  # ndi.filters.gaussian_filter(fftim, sigma=2),
              d=NMPERPIXEL,
              pcolormesh=False, ax=axs[1], origin='upper', vmax=2000, cmap='cet_fire_r')
@@ -116,8 +118,14 @@ im = axs[0].imshow(smooth1 - smooth1.mean(), cmap='gray', origin='upper')
 im.set_extent(np.array(im.get_extent())*NMPERPIXEL)
 axs[0].set_xlabel('x (nm)')
 for i in range(2):
-    axs[i].set_title('bc'[i], fontweight='bold', loc='left')
+    axs[i].set_title("({})".format('bc'[i]),
+                     #fontweight='bold',
+                     loc='left')
 #plt.tight_layout()
+axs[1].yaxis.set_major_locator(ticker.MultipleLocator(0.05))
+axs[1].yaxis.set_minor_locator(ticker.MultipleLocator(0.025))
+axs[1].xaxis.set_minor_locator(ticker.MultipleLocator(0.025))
+axs[1].yaxis.set_ticklabels([])
 plt.savefig(os.path.join('plots', 'GPAstripe-extract2.pdf'))
 
 smooth = gauss_homogenize2(crop2, mask=np.ones_like(crop2), sigma=70)
@@ -226,7 +234,9 @@ for i, ax in enumerate(axs.flat):
         left=False,
         labelbottom=False,
         labelleft=False)
-    ax.set_title('abcdefghijk'[i], fontweight='bold', loc='left')
+    ax.set_title("({})".format('abcdefghijk'[i]),
+                 #fontweight='bold',
+                 loc='left')
 # plt.tight_layout()
 plt.savefig(os.path.join('plots', 'GPAphasessampleB.pdf'), dpi=600)
 
@@ -235,12 +245,17 @@ loc = [1100, 350]
 rplot = 200
 fig, ax = plt.subplots(ncols=2, nrows=2, figsize=[5, 5], constrained_layout=True)
 ax[1, 0].imshow(angles[0, loc[0]-rplot:loc[0]+rplot, loc[1]-rplot:loc[1]+rplot],
-                cmap='twilight', interpolation='none')
+                cmap='twilight',
+                interpolation='none',
+               vmin=-np.pi, vmax=np.pi
+               )
 ax[0, 0].imshow(clipped[loc[0]-rplot:loc[0]+rplot, loc[1]-rplot:loc[1]+rplot],
                 cmap='gray', interpolation='none')
 loc = [1350, 1600]
-ax[1, 1].imshow(angles2[0, loc[0]-rplot:loc[0]+rplot, loc[1]-rplot:loc[1]+rplot],
-                cmap='twilight', interpolation='none')
+aim = ax[1, 1].imshow(angles2[0, loc[0]-rplot:loc[0]+rplot, loc[1]-rplot:loc[1]+rplot],
+                      cmap='twilight', 
+                      interpolation='none',
+                      vmin=-np.pi, vmax=np.pi)
 ax[0, 1].imshow(clipped[loc[0]-rplot:loc[0]+rplot, loc[1]-rplot:loc[1]+rplot],
                 cmap='gray', interpolation='none')
 
@@ -264,13 +279,25 @@ circ = plt.Circle([280, 300], radius=50, fc='none', ec='C2',
                   linewidth=3, alpha=0.7)
 ax[0, 1].add_patch(circ)
 
+circ = plt.Circle([180, 220], radius=50, fc='none', ec='C0',
+                  linewidth=3, alpha=0.7)
+ax[1, 0].add_patch(circ)
+circ = plt.Circle([150, 135], radius=50, fc='none', ec='C1',
+                  linewidth=3, alpha=0.7)
+ax[1, 1].add_patch(circ)
+circ = plt.Circle([280, 300], radius=50, fc='none', ec='C2',
+                  linewidth=3, alpha=0.7)
+ax[1, 1].add_patch(circ)
+
 for i, a in enumerate(ax.flat):
     a.tick_params(
         bottom=False,      # ticks along the bottom edge are off
         left=False,
         labelbottom=False,
         labelleft=False)
-    a.set_title('abcd'[i], loc='left', fontweight='bold')
+    a.set_title("({})".format('abcd'[i]), loc='left',
+                #fontweight='bold'
+               )
 
 
 scalebar = ScaleBar(1e-9*NMPERPIXEL, "m", length_fraction=0.25,
@@ -278,6 +305,11 @@ scalebar = ScaleBar(1e-9*NMPERPIXEL, "m", length_fraction=0.25,
                     width_fraction=0.025
                     )
 ax[1, 0].add_artist(scalebar)
+
+
+cbar = plt.colorbar(aim, ax=ax[1, :], aspect=20, ticks=[-np.pi, 0, np.pi])
+cbar.ax.set_yticklabels(['-π', '0', 'π'])
+
 # plt.tight_layout()
 plt.savefig(os.path.join('plots', 'GPAGSiCdisl.pdf'))
 # -
@@ -289,8 +321,11 @@ eroded_mask = binary_erosion(mask, disk(15))
 
 (~mask).sum(), (mask).sum()
 
+# Percentages of different orientation stripe domains
 for i in range(3):
-    print((np.where(mask, np.nan, np.argmax(magnitudes2, axis=0)) == i).sum()/(~mask).sum())
+    print((np.where(mask,
+                    np.nan,
+                    np.argmax(magnitudes2, axis=0)) == i).sum() / (~mask).sum())
 
 plt.figure(figsize=[12, 9])
 plt.imshow(np.where(mask.T[..., None],
@@ -311,54 +346,131 @@ axs[1].imshow(to_KovesiRGB((magnitudes2 > threshes2[:, None, None]).astype(float
 thresholded = (magnitudes2 > threshes2[:, None, None])
 
 
-wadvs = np.stack([np.moveaxis(gs2[i]['grad'], -1, 0) / 2/np.pi + pks2[i, :, None, None]*pks2scale for i in range(3)])
-
-# +
-# wadvs = []
-# for i in range(3):
-#     gphase = np.moveaxis(gs2[i]['grad'],-1,0) / 2/np.pi #still needed?
-#     w = gphase + pks2[i,:, None, None]*pks2scale
-#     wadvs.append(w)
-# wadvs = np.stack(wadvs)
-
-wxs = np.concatenate([wadvs[:, 0], -wadvs[:, 0]])
-wys = np.concatenate([wadvs[:, 1], -wadvs[:, 1]])
-#wxs = np.clip(wxs, -0.15,0.15)
-#wys = np.clip(wys, -0.15,0.15)
-p, _ = per(clipped-clipped.mean(), inverse_dft=False)
-fftim = np.abs(np.fft.fftshift(p))
-r = 0.08
-fig, axs = plt.subplots(ncols=3, figsize=[26, 8], sharex=True, sharey=True)
-axs[0].hist2d(wxs.ravel(),  # [np.stack([masks]*2).ravel()],
-              wys.ravel(),  # [np.stack([masks]*2).ravel()],
-              bins=500, cmap='cet_fire_r', vmax=2000,
-              range=[(-r, r), (-r, r)])  # , ax=axs[0]);
-axs[0].set_aspect('equal')
-#plt.title(f'sigma={sigma}, kstep={kstep}')
-pks2weights = magnitudes2 / np.quantile(magnitudes2[0], 0.99)
-axs[1].hist2d(wxs.ravel()[np.stack([~eroded_mask]*6).ravel()],
-              wys.ravel()[np.stack([~eroded_mask]*6).ravel()],
-              weights=np.stack([pks2weights[:, ~eroded_mask]]*2).ravel(),
-              bins=500, cmap='cet_fire_r', vmax=2000,
-              range=[(-r, r), (-r, r)])  # , ax=axs[0]);
-axs[1].set_aspect('equal')
-fftplot(fftim, ax=axs[2], pcolormesh=False, vmax=np.quantile(fftim, 0.999),
-        vmin=np.quantile(fftim, 0.01), cmap='cet_fire_r', interpolation='none', origin='lower')
-#plt.title(f'sigma={sigma}, kstep={kstep}')
-axs[0].set_ylim(-r, r)
-axs[0].set_xlim(-r, r)
-axs[1].scatter(*(pks2*1.1).T)
-axs[1].scatter(*-(pks2*1.1).T, color='C0')
-axs[1].scatter(*pks.T)
-axs[1].scatter(*-pks.T, color='C1')
-plt.tight_layout()
-# -
+wadvs = np.stack([np.moveaxis(gs2[i]['grad'], -1, 0) / 2 / np.pi + pks2[i, :, None, None]*pks2scale for i in range(3)])
 
 allwavelengths = np.linalg.norm(wadvs, axis=1)
 wavelengths = np.where(magnitudes2 == np.max(magnitudes2, axis=0, keepdims=True), allwavelengths, 0.)
 wavelengths = np.nanmax(wavelengths, axis=0)
 
 C0toC1 = LinearSegmentedColormap.from_list("C0toC1", ['C0', 'C1'])
+
+# +
+from scipy.constants import value
+a = 0.246*1e-9
+l = a / np.sqrt(3) #0.1430*1e-9 # nm, bondlength graphene 
+nu = 0.174
+k = 331 # J/m^2, elastic constant under uniaxial stress
+
+uc_area = a**2*0.5*np.sqrt(3)
+Vmax = 1.61e-3*value('electron volt') / uc_area*2
+
+def GSFE(ux, uy, k0=2*np.pi/(3*0.142), Vmax=1.61):
+    """
+    Approximate potential energy surface for interlayer interaction by first Fourier harmonics
+    
+    Given by equation 1 in https://doi.org/10.1103/PhysRevLett.124.116101
+    
+    Parameters
+    ----------
+    ux : np.array
+        relative displacement in armchair dir
+    uy : np.array
+        relative displacement in zigzag dir
+    k0 : float
+        wavelength determined from bond length of graphene
+    Vmax : float
+        barrier to relative in-plane motion of the layers in meV/atom
+    """
+    res = np.cos(2*k0*ux - 2*np.pi/3)
+    res -= 2*np.cos(k0*ux-np.pi/3)*np.cos(k0*uy*np.sqrt(3))
+    return 2*Vmax*(3/2 + res)
+
+def W0(Vmax=Vmax):
+    return np.sqrt(k*l*l*Vmax/(1-nu*nu)) * (3*np.sqrt(3)/np.pi -1)
+
+def epsilonc0(Vmax=Vmax):
+    return (1-nu)*W0(Vmax) / (k*l)
+
+def epsilonc0s(Vmax=Vmax):
+    return epsilonc0(Vmax=Vmax)*np.sqrt((7-nu)/6)
+
+def epsilonc1(Vmax=Vmax):
+    ratio = 1.238 # (np.sqrt((7+4*nu)*(7-nu)/6)-2) / (np.sqrt(7+4*nu) - 2)
+    return epsilonc0(Vmax)*ratio
+
+def epsilonc2(Vmax=Vmax):
+    return 1.5*np.sqrt(np.sqrt(3)*(7-nu)*Vmax/(2*np.pi*k))
+
+def epsilon2triperiod(epsilon):
+    """Naive period in triangles from epsilon
+    c.f.  the inverse operation:
+    eps = 0.246 / (NMPERPIXEL/wavelengths[i])
+    eps = a * pks
+    """
+    return l/epsilon
+
+def triperiod2epsilon(L):
+    """Naive epsilon from triangles period
+    c.f.  the  operation:
+    eps = 0.246 / (NMPERPIXEL/wavelengths[i])
+        = 0.246 * wavelengths[i] / NMPERPIXEL
+    eps = a * pks / NMPERPIXEL
+    """
+    return l/L
+
+def L0(epsilon, Vmax=Vmax):
+    """network period for the triangular phase
+    
+    Length of the triangle sides, i.e.
+    the linespacing is L0() / sqrt(3).
+    As defined by Lebedeva and Popov in:
+    https://doi.org/10.1103/PhysRevLett.124.116101
+    """
+    factor = np.sqrt(3) * (7 + 4*nu) / (4 * (1+nu))
+    return factor * l / (epsilon - epsilonc0(Vmax=Vmax))
+
+def L0_to_eps(L, Vmax=Vmax):
+    factor = np.sqrt(3) * (7 + 4*nu) / (4 * (1+nu))
+    return epsilonc0(Vmax=Vmax) + factor * l/L
+
+def L0s(epsilon, Vmax=Vmax):
+    """stripe period
+    
+    For the periodicity of the full lattice, i.e.
+    linespacing is L0s() / 2
+    As defined by Lebedeva and Popov in eq. 17 in:
+    https://doi.org/10.1103/PhysRevLett.124.116101
+    """
+    factor = np.sqrt(3)/(2*(1+nu))
+    epsilonc0s = epsilonc0(Vmax=Vmax) * np.sqrt((7-nu) / 6)
+    return factor * l / (epsilon-epsilonc0s)
+
+def L0s_to_eps(L, Vmax=Vmax):
+    """Inverse of L0s"""
+    factor = np.sqrt(3)/(2*(1+nu))
+    epsilonc0s = epsilonc0(Vmax=Vmax) * np.sqrt((7-nu) / 6)
+    return epsilonc0s + factor * l/L
+
+def L0s2(epsilon, Vmax=Vmax):
+    """stripe period large eps
+    
+    i.e. close to the transition to triangular incommensurate
+    
+    For the periodicity of the full lattice, i.e.
+    linespacing is L0s() / 2
+    As defined by Lebedeva and Popov in eq. 21 in:
+    https://doi.org/10.1103/PhysRevLett.124.116101
+    """
+    factor = (7-nu) / (2*np.sqrt(3)*(1+nu))
+    return factor * l/epsilon
+
+def L0s2_to_eps(L, Vmax=Vmax):
+    """Inverse of L0s2"""
+    factor = (7-nu) / (2*np.sqrt(3)*(1+nu))
+    return factor * l/L
+
+
+# -
 
 vals = [
     np.where(
@@ -368,17 +480,16 @@ vals = [
             keepdims=True),
         allwavelengths[i],
         np.nan) for i in range(3)]
-vals = [(0.246 / (2*NMPERPIXEL/val) * 100)[~np.isnan(val)] for val in vals]
+vals = [(0.246 / (2*NMPERPIXEL/val) * 100)[~np.isnan(val)] for val in vals] 
+#vals = [ (L0s_to_eps(2*1e-9 / (val/NMPERPIXEL)) * 100)[~np.isnan(val)] for val in vals]
+#vals = [ (2*1e-9 / (val/NMPERPIXEL))[~np.isnan(val)] for val in vals]
 
-plt.hist(vals, bins=1000, histtype='barstacked', color=list('rgb'));
-
-wadvs1 = np.stack([np.moveaxis(gs[i]['grad'], -1, 0) / 2/np.pi + pks[i, :, None, None] for i in range(3)])
+wadvs1 = np.stack([np.moveaxis(gs[i]['grad'], -1, 0) / (2*np.pi) + pks[i, :, None, None] for i in range(3)])
 allwavelengths1 = np.linalg.norm(wadvs1, axis=1)
 vals1 = [allwavelengths1[i][mask] for i in range(3)]
-vals1 = [(0.246 / (NMPERPIXEL/val) * 100) for val in vals1]
-plt.hist(vals1, bins=1000, histtype='barstacked', color=list('rgb'))
-
-plt.hist([np.concatenate(vals).ravel(), np.concatenate(vals1).ravel()], bins=1000, histtype='barstacked')
+vals1 = [(0.246 / (NMPERPIXEL/val) * 100) for val in vals1] # use better function here for triangles
+plt.hist(vals1, bins=1000, histtype='barstacked', color=list('rgb'))#, range=(0,3e-7))
+#plt.xlabel('triangular domain period (m)')
 
 weighted_vals = np.average(np.stack(vals1), weights=np.stack([m[mask] for m in magnitudes]), axis=0)
 
@@ -386,10 +497,6 @@ wl_im = np.where(mask, np.nan, 0.246 / (2*NMPERPIXEL/wavelengths) * 100)
 
 Xim = np.full_like(mask, np.nan, dtype=float)
 Xim[mask] = weighted_vals
-# Xim[~mask] =
-plt.imshow(np.where(mask, Xim, wl_im), cmap='inferno')
-plt.colorbar()
-plt.contour(mask, levels=[0.5], colors='white')
 
 
 # +
@@ -410,7 +517,7 @@ axs[2].hist(weighted_vals.ravel(), bins=200,
             orientation='horizontal')
 axs[2].legend()
 axs[2].set_ylim(0.2, 0.7)
-axs[2].set_ylabel('extracted strain (%)')
+axs[2].set_ylabel(r'extracted $\tilde{\epsilon}$ (%)')
 axs[2].axhline(0.3, label=r'$\epsilon_{c0}$', color='black', alpha=0.5)
 leftx = axs[2].get_xlim()[1]
 print(axs[2].get_xlim())
@@ -422,9 +529,9 @@ axs[2].annotate(r'$\epsilon_{c1}$', (leftx, 0.37),
                 ha='right', va='bottom',
                 xytext=(-1.5, 1.5), textcoords='offset points')
 #axs[2].set_xlabel('number of pixels')
-axs[0].set_title('a', fontweight='bold', loc='left')
-axs[1].set_title('b', fontweight='bold', loc='left')
-axs[2].set_title('c', fontweight='bold', loc='left')
+axs[0].set_title('(a)', loc='left')
+axs[1].set_title('(b)', loc='left')
+axs[2].set_title('(c)', loc='left')
 im = axs[1].imshow(np.where(mask, Xim, wl_im), cmap='inferno', vmin=0.2, vmax=0.7)
 plt.colorbar(im, ax=axs[:2], fraction=0.05, aspect=50)
 axs[1].contour(mask, levels=[0.5], colors='white')

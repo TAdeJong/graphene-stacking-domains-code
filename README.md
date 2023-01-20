@@ -10,6 +10,11 @@ The code in `morphology` generates the figures for [T.A. de Jong _et al._ Stacki
 
 The code in `spectroscopy` generates the figures for [T.A. de Jong _et al._ Low-Energy Electron Microscopy contrast of stacking boundaries: comparing twisted few-layer graphene and strained epitaxial graphene on silicon carbide, arXiv:2207.14616](https://arxiv.org/abs/2207.14616).
 
+
+# Data
+
+Data for the morphology part can be found at [4TU.researchdata](https://doi.org/10.4121/21930768).
+
 # TODO
 
 - Add environment and make consistent
