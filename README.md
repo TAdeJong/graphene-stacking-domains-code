@@ -6,9 +6,9 @@
 
 Jupyter notebooks to generate the figures related to stacking domains in few layer graphene, both in twisted bilayer graphene and in graphene on SiC.
 
-The code in `morphology` generates the figures for T.A. de Jong _et al._ "Stacking domain morphology in epitaxial graphene on silicon carbide",  	[arXiv:2207.14623](https://arxiv.org/abs/2207.14623).
+The code in `morphology` generates the figures for T.A. de Jong _et al._ "Stacking domain morphology in epitaxial graphene on silicon carbide", [Phys. Rev. Materials 7, 034001 (2023)](https://doi.org/10.1103/PhysRevMaterials.7.034001) 	([arXiv](https://arxiv.org/abs/2207.14623)).
 
-The code in `spectroscopy` generates the figures for T.A. de Jong _et al._ "Low-Energy Electron Microscopy contrast of stacking boundaries: Comparing twisted few-layer graphene and strained epitaxial graphene on silicon carbide", [Phys. Rev. B 107, 075431 (2023)](https://doi.org/10.1103/PhysRevB.107.075431) [arxiv](https://arxiv.org/abs/2207.14616).
+The code in `spectroscopy` generates the figures for T.A. de Jong _et al._ "Low-Energy Electron Microscopy contrast of stacking boundaries: Comparing twisted few-layer graphene and strained epitaxial graphene on silicon carbide", [Phys. Rev. B 107, 075431 (2023)](https://doi.org/10.1103/PhysRevB.107.075431) ([arxiv](https://arxiv.org/abs/2207.14616)).
 
 
 # Data
